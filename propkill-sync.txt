@@ -1,0 +1,5 @@
+"propkill-sync"
+{
+	"title"		"Propkill"
+	"menusystem"	"1"
+}
