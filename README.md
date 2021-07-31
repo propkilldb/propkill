@@ -1,3 +1,3 @@
-# Propkill: Arena
+# Propkill sync
 
-Propkill: Arena - new Propkill gamemode for Garry's Mod
+synchronise players and props between servers for globally low ping propkilling
