@@ -137,118 +137,19 @@ function GM:GetFallDamage()
 	return 0
 end
 
-local function GetValidPlayers(tbl)
-	if not tbl then tbl = player.GetAll() end
-	local ret = {}
-	
-	for k,v in pairs(tbl) do
-		if v:Alive() and v:Team() != TEAM_SPECTATOR then
-			table.insert(ret, v)
-		end
+// move the player up if they spawn a prop clipping into their feet
+hook.Add("PlayerSpawnedProp", "pk_moveplayerup", function(ply, model, ent)
+	local tr = util.TraceHull({
+		start = ply:GetPos()+Vector(0,0,10),
+		endpos = ply:GetPos(),
+		maxs = ply:OBBMaxs(),
+		mins = ply:OBBMins(),
+		filter = ply
+	})
+
+	if tr.Entity == ent then
+		ply:SetPos(tr.HitPos)
 	end
-
-	return ret
-end
-
-function GetNextPlayer(spectator, spectating)
-	local players = GetValidPlayers()
-	local picknext = false
-	local choice = NULL
-	local prev = NULL
-	local last = NULL
-
-	if table.Count(players) == 0 then
-		return NULL, NULL
-	end
-
-	for k,v in pairs(players) do
-		if v == spectating then
-			picknext = true
-			prev = last
-			continue
-		end
-
-		if picknext then
-			choice = v
-			break
-		end
-
-		last = v
-	end
-
-	if not IsValid(choice) then
-		for k,v in pairs(players) do
-			choice = v
-			break
-		end
-	end
-
-	if not IsValid(prev) then
-		for k,v in pairs(players) do
-			prev = v
-		end
-	end
-
-	return choice, prev
-end
-
-hook.Add("KeyPress", "speccontrols", function(ply, key)
-	if ply:GetObserverMode() != OBS_MODE_NONE then
-		local next, prev = GetNextPlayer(ply, ply:GetObserverTarget())
-
-		if key == IN_ATTACK then
-			if IsValid(next) then
-				ply:SpectateEntity(next)
-			end
-		elseif key == IN_ATTACK2 then
-			if IsValid(prev) then
-				ply:SpectateEntity(prev)
-			end
-		elseif key == IN_USE then
-			ply:StopSpectating()
-		end
-	end
-end)
-
-function meta:SetSpectating(target)
-	if not GAMEMODE:PlayerCanJoinTeam(self, TEAM_SPECTATOR) then return end
-	if IsValid(target) and target:IsPlayer() and target:Team() == TEAM_SPECTATOR then return end
-
-	self:SetTeam(TEAM_SPECTATOR)
-	self:SetCollisionGroup(COLLISION_GROUP_NONE)
-	self:SetSolid(SOLID_NONE)
-	self:StripWeapons()
-	GAMEMODE:PlayerSpawnAsSpectator(self)
-	self:Spectate(OBS_MODE_IN_EYE)
-
-	if not IsValid(target) then
-		for k,v in pairs(GetValidPlayers()) do
-			target = v
-			break
-		end
-	end
-	self:SpectateEntity(target)
-
-	if not self.firstSpectate then
-		self:ChatPrint("Press E to stop spectating")
-		self.firstSpectate = true
-	end
-end
-
-function meta:StopSpectating(target)
-	if not GAMEMODE:PlayerCanJoinTeam(self, TEAM_DEATHMATCH) then return end
-
-	self:SetTeam(TEAM_DEATHMATCH)
-	self:UnSpectate()
-	self:SetCollisionGroup(COLLISION_GROUP_PLAYER)
-	self:SetSolid(SOLID_BBOX)
-	self:Spawn()
-end
-
-util.AddNetworkString("PK_SpectatePlayer")
-net.Receive("PK_SpectatePlayer", function(len, ply)
-	local target = net.ReadEntity()
-	ply:SetSpectating(target)
 end)
 
 function GM:ShowTeam(ply) net.Start("pk_teamselect") net.Send(ply) end

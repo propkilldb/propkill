@@ -30,8 +30,8 @@ funcs[sync.addplayers] = function(data)
 
 			if v.team == TEAM_SPECTATOR then
 				ply:SetSpectating()
-			elseif v.team == TEAM_DEATHMATCH then
-				ply:StopSpectating()
+			else
+				ply:SetTeam(v.team or TEAM_DEATHMATCH)
 			end
 
 			if ply:Alive() and !v.alive then
@@ -57,6 +57,7 @@ end
 funcs[sync.playerdisconnect] = function(data)
 	for k,v in pairs(data) do
 		local ply = GetBotByCreationID(k)
+		if not IsValid(ply) then continue end
 		ply:Kick()
 	end
 end
@@ -71,12 +72,15 @@ end
 funcs[sync.playerteam] = function(data)
 	for k, v in pairs(data) do
 		local ply = GetBotByCreationID(k)
+		if not IsValid(ply) then continue end
 
 		if v == TEAM_SPECTATOR then
 			ply:SetSpectating()
-		elseif v == TEAM_DEATHMATCH then
+		elseif ply:Team() == TEAM_SPECTATOR then
 			ply:StopSpectating()
 		end
+
+		ply:SetTeam(v)
 	end
 end
 
@@ -93,17 +97,13 @@ funcs[sync.playerkill] = function(data)
 		print("kill:", ply, att, prop)
 		if IsValid(ply) and IsValid(prop) and ply:Alive() then
 			local dmg = DamageInfo()
-			dmg:SetDamageForce(v[3] or Vector())
-			dmg:SetDamagePosition(v[4] or Vector())
+			dmg:SetDamageForce(Vector(v[3]))
+			dmg:SetDamagePosition(Vector(v[4]))
 			dmg:SetDamageCustom(12)
 			dmg:SetDamage(ply:Health()*1000)
-			if IsValid(att) then
-				dmg:SetAttacker(att)
-			end
-			if IsValid(prop) then
-				dmg:SetInflictor(prop)
-			end
+			dmg:SetInflictor(prop)
 			dmg:SetDamageType(DMG_CRUSH)
+			dmg:SetAttacker(att)
 			
 			ply:TakeDamageInfo(dmg)
 			
@@ -112,6 +112,7 @@ funcs[sync.playerkill] = function(data)
 				ply:Kill()
 			end
 		elseif IsValid(ply) and ply:Alive() then
+			print("died to null prop")
 			ply:Kill()
 		end
 	end
@@ -135,6 +136,12 @@ funcs[sync.spawnprops] = function(data)
 		sync.syncedprops[k] = prop
 
 		hook.Run("PlayerSpawnedProp", owner, v.model or "", prop)
+
+		// add prop to bots undo table in case sync for some reason doesnt remove it
+		undo.Create("Prop")
+			undo.AddEntity(prop)
+			undo.SetPlayer(owner)
+		undo.Finish("Prop (" .. tostring(v.model) .. ")")
 	end
 end
 
@@ -170,32 +177,69 @@ funcs[sync.chatmessage] = function(data)
 	end
 end
 
+funcs[sync.duelinvite] = function(data)
+	PrintTable(data)
+	for arena,v in pairs(data) do
+		PrintTable(v)
+		local p1 = GetPlayerByCreationID(v.initiator)
+		local p2 = GetPlayerByCreationID(v.opponent)
+		print(p1, p2, v.initiator, v.opponent)
+
+		p2.duelrequest = arena
+		
+		p2:ChatPrint(p1:Nick() .. " invited u to duel to " .. v.kills .. " in under " .. v.time .. " minutes")
+		p2:ChatPrint("/accept to begin")
+		print("duel with " .. p1:Nick() .. " and " .. p2:Nick() .. " to " .. v.kills .. " in under " .. v.time .. " minutes in arena " .. arena)
+	end
+end
+
+funcs[sync.duelstart] = function(data)
+	for arena,v in pairs(data) do
+		local player1 = GetPlayerByCreationID(v.player1)
+		local player2 = GetPlayerByCreationID(v.player2)
+
+		startSyncDuel(player1, player2, arena, v.kills, v.time)
+	end
+end
+
+funcs[sync.duelupdate] = function(data)
+	for arena,v in pairs(data) do
+		if not sync.duel[arena] then continue end
+
+		sync.duel[arena].player1:SetNWInt("duelscore", v.p1k)
+		sync.duel[arena].player2:SetNWInt("duelscore", v.p2k)
+	end
+end
+
+funcs[sync.duelend] = function(data)
+	for arena,v in pairs(data) do
+		PrintTable(v)
+		endSyncDuel(arena, v.player1kills, v.player2kills, v.reason)
+	end
+end
+
 hook.Add("SetupMove", "setsyncedbotpositions", function(ply, mv, cmd)
-	if ply.SyncedPlayer and playerupdate[ply.SyncedPlayer] then
-		local data = playerupdate[ply.SyncedPlayer]
+	if not ply.SyncedPlayer then return end
 
-		ply:SetEyeAngles(data.ang)
-		mv:SetOrigin(data.pos)
-		mv:SetVelocity(data.vel)
+	local data = playerupdate[ply.SyncedPlayer] or latestplayerupdate[ply.SyncedPlayer]
+	if not data then return end
 
-		if (data.fla or false) != ply:FlashlightIsOn() then
-			ply:Flashlight(data.fla)
-		end
+	ply:SetEyeAngles(data.ang)
+	mv:SetOrigin(data.pos)
+	mv:SetVelocity(data.vel)
 
-		playerupdate[ply.SyncedPlayer] = nil
+	if (data.fla or false) != ply:FlashlightIsOn() then
+		ply:Flashlight(data.fla)
 	end
 
-	if ply.SyncedPlayer and latestplayerupdate[ply.SyncedPlayer] then
-		local data = latestplayerupdate[ply.SyncedPlayer]
-		ply:SetEyeAngles(data.ang)
-	end
+	playerupdate[ply.SyncedPlayer] = nil
 end)
 
 hook.Add("StartCommand", "setbotbuttons", function(ply, cmd)
 	local data = latestplayerupdate[ply.SyncedPlayer]
+	if not data then return end
 
 	if ply.SyncedPlayer and data then
 		cmd:SetButtons(data.btn or 0)
-		cmd:SetMouseWheel(data.scr or 0)
 	end
 end)

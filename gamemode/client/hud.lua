@@ -82,9 +82,24 @@ surface.CreateFont( "esp_font", {
 	outline = false,
 } )
 
+surface.CreateFont("pk_duelvsfont", {
+	font = "stb24",
+	size = 48,
+	weight = 650,
+	antialias = true,
+	shadow = true,
+})
+
+surface.CreateFont("pk_duelfont", {
+	font = "stb24",
+	size = 32,
+	weight = 650,
+	antialias = true,
+	shadow = true,
+})
+
 hook.Add("HUDPaint", "PKHUD", function()
 	local leader = GetGlobalString("PK_CurrentLeader", "Nobody")
-	--local duelscore = GetGlobalString("PK_DuelScore")
 	surface.SetFont("stb24")
 	local name = "Leader: " .. leader
 	local lw, lh = surface.GetTextSize(name)
@@ -98,12 +113,6 @@ hook.Add("HUDPaint", "PKHUD", function()
 		draw.SimpleText(name , "stb24", lw + 30, ScrH() - 30, Color(255, 255, 255, 200), 0, 0)
 	end
 
-	/*if LocalPlayer():Team() == TEAM_UNASSIGNED then
-		local coolmode = GetGlobalString("PK_CurrentMode")
-		draw.SimpleText(coolmode, "spec_font1", ScrW()/2, ScrH()/6, Color(255,255,255,200), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
-		draw.SimpleText("Click to cycle players, right click to follow, reload to first person spectate", "spec_font2", ScrW()/2, ScrH()/7+10, Color(255,255,255,200), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
-	end*/
-
 	if timer.Exists("hudmsg") then
 		draw.SimpleText(hudmsg, "spec_font1", ScrW()/2, ScrH()/6, Color(255,255,255,200), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
 	end
@@ -111,10 +120,69 @@ hook.Add("HUDPaint", "PKHUD", function()
 	if GetGlobalBool("Warmup") then
 		draw.SimpleText("Warm Up", "spec_font1", ScrW()/2, ScrH()/4, Color(255,255,255,200), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
 	end
-end
-)
+end)
 
-BlockedHUDElements = {CHudHealth = true, CHudBattery = true, CHudAmmo = true, CHudSecondaryAmmo = true, CHudWeaponSelection = true}
+if duelhud then duelhud:Remove() end
+duelhud = vgui.Create("DPanel")
+duelhud:SetSize(1000, 70)
+duelhud:SetPos(ScrW()/2 - (duelhud:GetWide()/2), 0)
+function duelhud:Paint(w, h)
+	if not IsValid(LocalPlayer()) then return end
+	local target = IsValid(LocalPlayer():GetObserverTarget()) and LocalPlayer():GetObserverTarget() or LocalPlayer()
+	local arena = target:GetNWString("arena", "0")
+	if not IsValid(target) or arena == "0" then return end
+
+	local kills = GetGlobalInt(arena .. "kills", 0)
+	local player1 = GetGlobalEntity(arena .. "player1", NULL)
+	local player2 = GetGlobalEntity(arena .. "player2", NULL)
+
+	if not IsValid(player1) or not IsValid(player2) then return end
+
+	local p1score = player1:GetNWInt("duelscore", 0)
+	local p2score = player2:GetNWInt("duelscore", 0)
+
+	surface.SetDrawColor(80, 80, 80)
+	if p1score > p2score then surface.SetDrawColor(33, 101, 230) end
+	surface.DrawRect(0, 0, w/2, h)
+	
+	surface.SetDrawColor(80, 80, 80)
+	if p2score > p1score then surface.SetDrawColor(33, 101, 230) end
+	surface.DrawRect(w/2, 0, w/2, h)
+	
+	surface.SetDrawColor(48, 70, 120)
+	draw.NoTexture()
+	surface.DrawTexturedRectRotated(w/2-10, h, 80, 180, -15)
+	
+	draw.DrawText("vs", "pk_duelvsfont", w/2, 6, Color(255, 255, 255), TEXT_ALIGN_CENTER)
+	
+	draw.DrawText(player1:Nick() or "", "pk_duelfont", w/2-60, 10, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
+	draw.DrawText(player2:Nick() or "", "pk_duelfont", w/2+60, 10, Color(255, 255, 255), TEXT_ALIGN_LEFT)
+	
+	draw.DrawText(p1score, "pk_duelfont", 20, 8, Color(255, 255, 255), TEXT_ALIGN_LEFT)
+	draw.DrawText(p2score, "pk_duelfont", w-20, 8, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
+	
+	local width = math.floor((w-160)/2/kills)
+	
+	for i=1, kills do
+		if i <= p1score then
+			surface.SetDrawColor(255, 255, 255)
+		else
+			surface.SetDrawColor(50, 50, 50)
+		end
+
+		surface.DrawRect(w/2-60-width*i, 51, width-2, 5)
+		
+		if i <= p2score then
+			surface.SetDrawColor(255, 255, 255)
+		else
+			surface.SetDrawColor(50, 50, 50)
+		end
+		
+		surface.DrawRect(w/2+60+width*i-width, 51, width-2, 5)
+	end
+end
+
+local BlockedHUDElements = {CHudHealth = true, CHudBattery = true, CHudAmmo = true, CHudSecondaryAmmo = true, CHudWeaponSelection = true}
 
 function GM:HUDShouldDraw(name)
 	if BlockedHUDElements[name] then

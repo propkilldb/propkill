@@ -9,27 +9,59 @@ function PANEL:Init()
 	self.opponentselect:SetSize(100, 20)
 	self.opponentselect:SetValue("Select opponent")
 
-	self.duelinvitebutton = vgui.Create("DButton", self)
-	self.duelinvitebutton:SetText("Send Invite")
-	self.duelinvitebutton:Dock(TOP)
-	self.duelinvitebutton:SetSize(250, 30)
-	self.duelinvitebutton.DoClick = function()
+	/*local ktpanel = vgui.Create("DPanel", self)
+	ktpanel:Dock(TOP)
+	ktpanel:SetSize(100, 20)*/
+
+
+	local numkills = vgui.Create("DNumSlider", self)
+	numkills:Dock(TOP)
+	numkills:SetSize(100, 20)
+	numkills:SetDecimals(0)
+	numkills:SetMin(1)
+	numkills:SetMax(60)
+	numkills:SetValue(15)
+	numkills:SetText("Kills")
+	numkills:InvalidateLayout()
+
+	function numkills:PerformLayout(w, h)
+		self.Label:SetWide(30)
+		self.Scratch:SetWide(50)
+		self.Label:Dock(LEFT)
+		self.Scratch:Dock(LEFT)
+	end
+
+	local numtime = vgui.Create("DNumSlider", self)
+	numtime:Dock(TOP)
+	numtime:SetSize(100, 20)
+	numtime:SetDecimals(0)
+	numtime:SetMin(1)
+	numtime:SetMax(30)
+	numtime:SetValue(10)
+	numtime:SetText("Time")
+	numtime:InvalidateLayout()
+
+	function numtime:PerformLayout(w, h)
+		self.Label:SetWide(30)
+		self.Scratch:SetWide(50)
+		self.Label:Dock(LEFT)
+		self.Scratch:Dock(LEFT)
+	end
+
+	local duelinvitebutton = vgui.Create("DButton", self)
+	duelinvitebutton:SetText("Send Invite")
+	duelinvitebutton:Dock(TOP)
+	duelinvitebutton:SetSize(250, 30)
+	duelinvitebutton.DoClick = function()
 		local nick, opponent = self.opponentselect:GetSelected()
 		if not IsValid(opponent) then return end
 
 		net.Start("pk_duelinvite")
 			net.WriteEntity(opponent)
-			net.WriteInt(15, 8) // kills
-			net.WriteInt(10, 8) // time in minutes
+			net.WriteInt(numkills:GetValue() or 15, 8) // kills
+			net.WriteInt(numtime:GetValue() or 10, 8) // time in minutes
 		net.SendToServer()
 
-		/*self.duelinvitebutton:SetEnabled(false)
-
-		timer.Create("PK_duelinvitebutton", 60, 1, function()
-			if IsValid(self.duelinvitebutton) then
-				self.duelinvitebutton:SetEnabled(true)
-			end
-		end)*/
 	end
 
 	self:Refresh()
@@ -43,11 +75,6 @@ function PANEL:Refresh()
 			self.opponentselect:AddChoice(v:Nick(), v)
 		end
 	end
-
-	if timer.Exists("PK_duelinvitebutton") then
-		self.duelinvitebutton:SetEnabled(false)
-	end
-
 end
 
 function PANEL:Paint(w, h)

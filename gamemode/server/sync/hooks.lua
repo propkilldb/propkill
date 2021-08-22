@@ -20,7 +20,13 @@ hook.Add("Think", "syncpropmove", function()
 	if not sync.sendqueue[sync.propupdate] then sync.sendqueue[sync.propupdate] = {} end
 	
 	for k,v in pairs(sync.propstosync) do
+		if not IsValid(v) then
+			sync.propstosync[k] = nil
+			continue
+		end
+		
 		local phys = v:GetPhysicsObject()
+		if phys:IsAsleep() then continue end
 		
 		sync.sendqueue[sync.propupdate][k] = {
 			pos = v:GetPos(),
@@ -49,7 +55,6 @@ hook.Add("PlayerInitialSpawn", "syncplayerspawn", function(ply)
 		model = ply:GetInfo("cl_playermodel"),
 		team = ply:Team()
 	}
-		
 end)
 
 hook.Add("PlayerDisconnected", "syncplayerdisconnect", function(ply)

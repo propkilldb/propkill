@@ -1,5 +1,5 @@
 function GM:PhysgunPickup(ply, ent)
-	ent.Owner = ent:GetNW2Entity("Owner", NULL)
+	ent.Owner = ent:GetNWEntity("Owner", NULL)
 	if ent.Owner == nil then
 		ent.Owner = ply
 	end

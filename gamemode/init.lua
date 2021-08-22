@@ -11,6 +11,7 @@ include("server/player.lua")
 include("server/entity.lua")
 include("server/commands.lua")
 include("server/base.lua")
+include("server/spectating.lua")
 include("shared/entity.lua")
 include("shared/networking.lua")
 

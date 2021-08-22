@@ -59,3 +59,12 @@ function shuffle(table)
 	end
 	return table
 end
+
+hook.Add("SetupPlayerVisibility", "addallplayers", function(ply)
+	-- Adds any view entity
+	for k,v in pairs(ents.GetAll()) do
+		if v:GetClass() == "prop_physics" or v:IsPlayer() then
+			AddOriginToPVS(v:GetPos())
+		end
+	end
+end)

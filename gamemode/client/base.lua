@@ -29,6 +29,10 @@ net.Receive("KilledByProp", function()
 	GAMEMODE:AddDeathNotice(attacker:Name(), attacker:Team(), inflictor, ply:Name(), ply:Team())
 end)
 
+hook.Add("OnPlayerChat", "chattick", function()
+	chat.PlaySound()
+end)
+
 /*
 --TimedSin replacement which works how it should've worked to begin with
 local function EternalSin( Freak, Trough, Peak )
@@ -39,6 +43,13 @@ local function EternalSin( Freak, Trough, Peak )
 	return TimedSin( Freak, ActualTrough, ActualPeak, 0 )
 end
 */
+
+hook.Add("PostDraw2DSkyBox", "removeSkybox", function()
+	//local col = HSVToColor(EternalSin(0.1, 0, 360), 1, 1)
+	//render.Clear(col.r, col.g, col.b, 255)
+	render.Clear(50, 50, 50, 255)
+	return true
+end)
 
 hook.Add("PreDrawSkyBox", "removeSkybox", function()
 	//local col = HSVToColor(EternalSin(0.1, 0, 360), 1, 1)
