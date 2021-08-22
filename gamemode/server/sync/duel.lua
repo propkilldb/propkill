@@ -51,6 +51,9 @@ end)
 function startSyncDuel(ply, opponent, arena, kills, time)
 	ply:StopSpectating()
 	opponent:StopSpectating()
+	
+	ply:CleanUp()
+	opponent:CleanUp()
 
 	ply.dueling = arena
 	opponent.dueling = arena
@@ -73,7 +76,7 @@ function startSyncDuel(ply, opponent, arena, kills, time)
 		Color(0,120,255), ply:Nick(),
 		Color(255,255,255), " started a duel against ",
 		Color(0,120,255), opponent:Nick(),
-		Color(255,255,255), " to " .. kills .. " kills"
+		Color(255,255,255), " to " .. kills .. " kills in under " .. time .. " minutes"
 	})
 
 	sync.arenas[arena].available = false
@@ -95,14 +98,18 @@ function startSyncDuel(ply, opponent, arena, kills, time)
 
 end
 
-function endSyncDuel(arena, p1kills, p2kills, reason)
+function endSyncDuel(arena, p1kills, p2kills, reason, forfeitply)
 	local ply1 = sync.duel[arena].player1
 	local ply2 = sync.duel[arena].player2
+	local forfeitply = GetPlayerByCreationID(forfeitply)
 
 	if not IsValid(ply1) or not IsValid(ply2) then
 		forceEndSyncDuel(ply1, ply2, p1kills, p2kills)
 		return
 	end
+
+	ply1:CleanUp()
+	ply2:CleanUp()
 
 	ply1.duelscore = p1kills
 	ply2.duelscore = p2kills
@@ -116,16 +123,29 @@ function endSyncDuel(arena, p1kills, p2kills, reason)
 		result = "tied"
 	end
 
-	if reason == "forfeit" then
-		result = "forfeited"
+	if IsValid(forfeitply) and winner == forfeitply then
+		local temp = loser
+		loser = winner
+		winner = temp
+		result = "won"
 	end
 
-	ChatMsg({
+	local message = {
 		Color(0,120,255), winner:Nick(),
 		Color(255,255,255), " " .. result .. " a duel against ",
 		Color(0,120,255), loser:Nick(),
 		Color(255,255,255), " " .. winner.duelscore .. "-" .. loser.duelscore
-	})
+	}
+
+	if reason == "forfeit" then
+		table.Add(message, {
+			Color(255,255,255), " because ",
+			Color(0,120,255), forfeitply:Nick(),
+			Color(255,255,255), " forfeited"
+		})
+	end
+
+	ChatMsg(message)
 
 	timer.Simple(3, function()
 		sync.duel[arena].available = true
@@ -149,12 +169,14 @@ function forceEndSyncDuel(ply1, ply2, p1kills, p2kills)
 	pcall(function()
 		ply1.dueling = nil
 		ply1:SetNWString("arena", "0")
+		ply1:CleanUp()
 		ply1:Spawn()
 	end)
 
 	pcall(function()
 		ply2.dueling = nil
 		ply2:SetNWString("arena", "0")
+		ply2:CleanUp()
 		ply2:Spawn()
 	end)
 
@@ -193,7 +215,7 @@ hook.Add("PlayerSay", "duelforfeit", function(ply, msg)
 	if not ply.dueling then return end
 
 	if not sync.sendqueue[sync.duelresponse] then sync.sendqueue[sync.duelresponse] = {} end
-	table.insert(sync.sendqueue[sync.duelresponse], {"forfeit", ply.dueling})
+	table.insert(sync.sendqueue[sync.duelresponse], {"forfeit", ply.dueling, ply:GetCreationID()})
 
 	return ""
 end)

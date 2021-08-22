@@ -214,7 +214,7 @@ end
 funcs[sync.duelend] = function(data)
 	for arena,v in pairs(data) do
 		PrintTable(v)
-		endSyncDuel(arena, v.player1kills, v.player2kills, v.reason)
+		endSyncDuel(arena, v.player1kills, v.player2kills, v.reason, v.forfeitply)
 	end
 end
 
