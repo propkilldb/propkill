@@ -137,21 +137,6 @@ function GM:GetFallDamage()
 	return 0
 end
 
-// move the player up if they spawn a prop clipping into their feet
-hook.Add("PlayerSpawnedProp", "pk_moveplayerup", function(ply, model, ent)
-	local tr = util.TraceHull({
-		start = ply:GetPos()+Vector(0,0,10),
-		endpos = ply:GetPos(),
-		maxs = ply:OBBMaxs(),
-		mins = ply:OBBMins(),
-		filter = ply
-	})
-
-	if tr.Entity == ent then
-		ply:SetPos(tr.HitPos)
-	end
-end)
-
 function GM:ShowTeam(ply) net.Start("pk_teamselect") net.Send(ply) end
 function GM:ShowHelp(ply) net.Start("pk_helpmenu") net.Send(ply) end
 function GM:ShowSpare2(ply) net.Start("pk_settingsmenu") net.Send(ply) end

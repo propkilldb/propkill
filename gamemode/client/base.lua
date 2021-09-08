@@ -59,7 +59,11 @@ hook.Add("PreDrawSkyBox", "removeSkybox", function()
 end)
 
 //disable screen wobble on landing
-hook.Add("CalcView", "CalcVyoo",function(ply, pos, ang, fov)
+hook.Add("CalcView", "CalcVyoo", function(ply, pos, ang, fov)
+	if table.Count(hook.GetTable()["CalcView"]) > 1 then
+		hook.Remove("CalcView", "CalcVyoo")
+	end
+
 	local target = LocalPlayer():GetObserverTarget()
 	local targetFOV = spectateFOV:GetInt()
 	
