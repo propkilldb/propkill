@@ -93,15 +93,17 @@ function DoPlayerEntitySpawn( ply, entity_name, model, iSkin, strBody, mv )
 	vFlushPoint = ent:GetPos() - vFlushPoint				-- Get the difference
 	vFlushPoint = tr.HitPos + vFlushPoint					-- Add it to our target pos
 
-	if tr.HitNormal.z != 1 then
+	if math.abs(tr.HitNormal.z) != 1 then
+		local mins, maxs = ent:GetRotatedAABB(ent:OBBMins(), ent:OBBMaxs())
+		local disttoply = tr.HitPos:Distance(ply:GetShootPos())
 		local hulltr = util.TraceHull({
-			start = ply:GetShootPos(),
+			start = tr.HitPos - ply:EyeAngles():Forward() * maxs:Length(),
 			endpos = tr.HitPos,
-			maxs = ent:OBBMaxs(),
-			mins = ent:OBBMins(),
-			filter = ply
+			mins = mins,
+			maxs = maxs,
+			filter = {ent, ply}
 		})
-
+		
 		vFlushPoint = hulltr.HitPos
 	end
 
@@ -157,6 +159,7 @@ function GMODSpawnProp( ply, model, iSkin, strBody, mv )
 
 	if tr.Entity == e then
 		mv:SetOrigin(tr.HitPos)
+		ply:SetPos(tr.HitPos)
 	end
 
 	undo.Create( "Prop" )

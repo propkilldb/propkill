@@ -1,3 +1,4 @@
+include("sourcenet/incoming.lua")
 local funcs = {}
 local playerupdate = playerupdate or {}
 local latestplayerupdate = latestplayerupdate or {}
@@ -10,6 +11,33 @@ function processSync(data)
 		if funcs[k] then
 			funcs[k](v)
 		end
+	end
+end
+
+local function processNetworkedVoice(data)
+    for k, v in next, player.GetHumans() do
+        local entIndex = v:EntIndex()
+        local netChan = CNetChan(entIndex)
+        if not netChan then continue end
+
+		local buf = netChan:GetVoiceBuffer()
+        buf:WriteUInt(svc_VoiceData, NET_MESSAGE_BITS)
+        buf:WriteByte(data.client) // figure out who client is (entindex - 1)
+        buf:WriteByte(0) // proximity
+        buf:WriteWord(data.bits)
+
+        for i = 1, data.bits do	
+            buf:WriteBit(data.voiceBuffer[i])
+        end
+    end
+end
+
+funcs[sync.voicedata] = function(data)
+	for k, v in pairs(data) do
+		local ply = GetBotByCreationID(k)
+		v.client = ply:EntIndex() - 1
+
+		processNetworkedVoice(v)
 	end
 end
 

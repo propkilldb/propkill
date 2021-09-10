@@ -7,6 +7,16 @@ function packetlength(packet)
 	return string.char(tonumber(b4, 16), tonumber(b3, 16), tonumber(b2, 16), tonumber(b1, 16))
 end
 
+function GetPlayerByIP(ip)
+	for k, v in next, player.GetHumans() do
+		if v:IPAddress() == ip then
+			return v
+		end
+	end
+
+	return NULL
+end
+
 function generateInitialPacket()
 	local plys = {}
 	local props = {}

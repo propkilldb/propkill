@@ -86,6 +86,7 @@ function meta:SetSpectating(target)
 	if not GAMEMODE:PlayerCanJoinTeam(self, TEAM_SPECTATOR) then return end
 	if IsValid(target) and target:IsPlayer() and target:Team() == TEAM_SPECTATOR then return end
 
+	self:CleanUp()
 	self:SetTeam(TEAM_SPECTATOR)
 	self:SetCollisionGroup(COLLISION_GROUP_NONE)
 	self:SetSolid(SOLID_NONE)

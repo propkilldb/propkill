@@ -1,6 +1,31 @@
 sync.sendqueue = sync.sendqueue or {}
 sync.propstosync = sync.propstosync or {}
 
+FilterIncomingMessage(clc_VoiceData, function(netChan, read, write)
+	write:WriteUInt(clc_VoiceData, NET_MESSAGE_BITS)
+
+	local bits = read:ReadWord()
+	write:WriteWord(bits)
+
+	if bits > 0 then
+		local voiceBuffer = {}
+		for i = 1, bits do
+			voiceBuffer[i] = read:ReadBit()
+			write:WriteBit(voiceBuffer[i])
+		end
+
+		local ply = GetPlayerByIP(tostring(netChan:GetAddress()))
+
+		if IsValid(ply) and ply:IsBot() then return end
+		if not sync.sendqueue[sync.voicedata] then sync.sendqueue[sync.voicedata] = {} end
+		
+		sync.sendqueue[sync.voicedata][ply:GetCreationID()] = {
+			bits = bits,
+			voiceBuffer = voiceBuffer
+		}
+	end
+end)
+
 hook.Add("SetupMove", "queueplayerpositions", function(ply, mv, cmd)
 	if not ply:IsBot() then
 		if not sync.sendqueue[sync.playerupdate] then sync.sendqueue[sync.playerupdate] = {} end
