@@ -31,12 +31,10 @@ include("duel.lua")
 
 local pps = 0
 local ppslast = 0
-local lastdata = ""
-local lasthead = 0
 
 local function setupsocket(ip, port)
 	if clientsock and clientsock.Cancel then
-		onDisconnect(clientsock, false)
+		onDisconnect()
 	end
 	clientsock = GLSock(GLSOCK_TYPE_TCP)
 
@@ -61,7 +59,7 @@ local function setupsocket(ip, port)
 		buffer:Write(initialpacket)
 		sock:Send(buffer, onSend)
 
-		readHeader(sock)
+		readHeader()
 
 		hook.Add("Think", "sync_sendpacket", function()
 			if not clientsock then return end
@@ -79,25 +77,29 @@ local function setupsocket(ip, port)
 	end)
 
 	// reads per tick
-	for i=1, 8 do
+	for i=1, 10 do
 		hook.Add("Think", "GLSockPolling" .. i, hook.GetTable()["Think"]["GLSockPolling"])
 	end
 end
 
-function readHeader(sock)
+function readHeader()
 	readUntil(4, onHeader)
 end
 
 function onHeader(buffer)
 	local headsize = buffer:ReadInt()
 
+	if headsize > 65535 then
+		onDisconnect(true)
+	end
+	
 	readUntil(headsize, onRead)
 end
 
 function onRead(buffer)
 	local data = buffer:Read(buffer:Size())
 
-	readHeader(sock)
+	readHeader()
 
 	processSync(util.JSONToTable(data))
 end
@@ -109,13 +111,13 @@ function readUntil(bytes, callback)
 	local function readData(sock, buffer, err)
 		if err != GLSOCK_ERROR_SUCCESS then
 			print("socket read error", err)
-			onDisconnect(sock, true)
+			onDisconnect(true)
 			return
 		end
 
 		pps = pps + 1
 		
-		local data = buffer:Read(bytes)
+		local data = buffer:Read(buffer:Size())
 		finalsize = finalsize + buffer:Size()
 
 		finalbuffer:Write(data)
@@ -137,14 +139,15 @@ end
 function onSend(sock, bytes, err)
 	if err != GLSOCK_ERROR_SUCCESS then
 		print("socket send error", err)
-		onDisconnect(sock, true)
+		onDisconnect(true)
 		return
 	end
 end
 
-function onDisconnect(sock, retry)
-	if not sock then sock = clientsock end
+function onDisconnect(retry)
 	if not clientsock or not clientsock.Cancel then return end
+
+	hook.Remove("Think", "sync_sendpacket")
 
 	if retry and sync.connected then
 		timer.Create("syncretry", 1, 0, function()
@@ -154,11 +157,9 @@ function onDisconnect(sock, retry)
 		ErrorNoHaltWithStack("sync error")
 	end
 
-	hook.Remove("Think", "sync_sendpacket")
-
 	sync.connected = false
-	sock:Cancel()
-	sock:Close()
+	clientsock:Cancel()
+	clientsock:Close()
 	
 	for k,v in pairs(player.GetBots()) do
 		if v.SyncedPlayer then
@@ -217,5 +218,5 @@ concommand.Add("pk_sync", function(ply, cmd, args)
 end)
 
 concommand.Add("pk_unsync", function()
-	onDisconnect(clientsock, false)
+	onDisconnect(false)
 end)

@@ -5,6 +5,8 @@ function meta:CleanUp()
 	if not undotable then return end
 
 	for k,v in ipairs(undotable) do
+		if not v.Entities then continue end
+
 		for l, ent in ipairs(v.Entities) do
 			if not IsValid(ent) then continue end
 			ent:Remove()
