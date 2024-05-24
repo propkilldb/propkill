@@ -16,51 +16,25 @@ net.Receive("pk_gamenotify", function()
 	timer.Create("hudmsg", time, 1, function() end)
 end)
 
-net.Receive("KilledByProp", function()
-	local ply       = net.ReadEntity()
-	local inflictor = net.ReadString()
-	local attacker  = net.ReadEntity()
-
-	if not attacker:IsPlayer() then
-		GAMEMODE:AddDeathNotice(nil, 0, "suicide", ply:Name(), ply:Team())
-		return
-	end
-
-	GAMEMODE:AddDeathNotice(attacker:Name(), attacker:Team(), inflictor, ply:Name(), ply:Team())
-end)
-
 hook.Add("OnPlayerChat", "chattick", function()
 	chat.PlaySound()
 end)
 
-/*
---TimedSin replacement which works how it should've worked to begin with
-local function EternalSin( Freak, Trough, Peak )
-	local Diff = ( Peak -Trough )
-	local ActualTrough = ( Trough +Peak ) /2
-	local ActualPeak = ActualTrough +Diff
-
-	return TimedSin( Freak, ActualTrough, ActualPeak, 0 )
-end
-*/
-
 hook.Add("PostDraw2DSkyBox", "removeSkybox", function()
-	//local col = HSVToColor(EternalSin(0.1, 0, 360), 1, 1)
-	//render.Clear(col.r, col.g, col.b, 255)
 	render.Clear(50, 50, 50, 255)
 	return true
 end)
 
 hook.Add("PreDrawSkyBox", "removeSkybox", function()
-	//local col = HSVToColor(EternalSin(0.1, 0, 360), 1, 1)
-	//render.Clear(col.r, col.g, col.b, 255)
 	render.Clear(50, 50, 50, 255)
 	return true
 end)
 
 //disable screen wobble on landing
 hook.Add("CalcView", "CalcVyoo", function(ply, pos, ang, fov)
-	if table.Count(hook.GetTable()["CalcView"]) > 1 then
+	// if there is more than 1 calcview hook, we should just remove ourself, so we dont override whatever they're doing
+	local thishook = hook.GetTable()["CalcView"]["CalcVyoo"]
+	if next(hook.GetTable()["CalcView"], "CalcVyoo") != thishook then
 		hook.Remove("CalcView", "CalcVyoo")
 	end
 

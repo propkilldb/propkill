@@ -1,237 +1,217 @@
-/*------------------------------------------
-					Fonts
-------------------------------------------*/
-surface.CreateFont( "team_font", {
-	font = "Trebuchet24",
-	size = 32,
-	weight = 650,
-	blursize = 0,
-	scanlines = 0,
+
+local PANEL = {}
+
+AccessorFunc(PANEL, "namecolor", "NameColor", FORCE_COLOR)
+AccessorFunc(PANEL, "valuecolor", "ValueColor", FORCE_COLOR)
+AccessorFunc(PANEL, "textcolor", "TextColor", FORCE_COLOR)
+
+function PANEL:Init()
+	local this = self
+
+	local lname = vgui.Create("DLabel", self)
+	lname:SetFont("HudDefault")
+	lname:SetColor(Color(255, 255, 255))
+	lname:SetText("none")
+	lname:SizeToContentsX(18)
+	lname:SetContentAlignment(5)
+	lname:Dock(LEFT)
+	function lname:Paint(w, h)
+		surface.SetDrawColor(this.namecolor or Color(0, 120, 255))
+		surface.DrawRect(0, 0, w, h)
+		surface.SetDrawColor(this.valuecolor or Color(60, 60, 60))
+		draw.NoTexture()
+		surface.DrawTexturedRectRotated(w+5, h/2, 10, h+10, -15)
+	end
+
+	local lvalue = vgui.Create("DLabel", self)
+	lvalue:SetFont("HudDefault")
+	lvalue:SetColor(Color(255, 255, 255))
+	lvalue:SetText("none")
+	lvalue:SizeToContentsX(18)
+	lvalue:SetContentAlignment(5)
+	lvalue:Dock(LEFT)
+	function lvalue:Paint(w, h)
+		surface.SetDrawColor(this.valuecolor or Color(60, 60, 60))
+		surface.DrawRect(0, 0, w, h)
+		surface.SetDrawColor(this.namecolor or Color(0, 120, 255))
+		draw.NoTexture()
+		surface.DrawTexturedRectRotated(-5, h/2, 10, h+10, -15)
+	end
+
+	self.lname = lname
+	self.lvalue = lvalue
+end
+
+function PANEL:SetName(txt)
+	self.lname:SetText(txt)
+	self:Update()
+end
+
+function PANEL:SetValue(txt)
+	self.lvalue:SetText(txt)
+	self:Update()
+end
+
+function PANEL:SetFont(font)
+	self.lname:SetFont(font)
+	self.lvalue:SetFont(font)
+	self:Update()
+end
+
+function PANEL:SetTextColor(col)
+	self.lname:SetTextColor(col)
+	self.lvalue:SetTextColor(col)
+end
+
+function PANEL:Update()
+	self.lname:SizeToContentsX(18)
+	self.lvalue:SizeToContentsX(18)
+	self:GetParent():Layout()
+end
+
+function PANEL:PerformLayout(w, h)
+	self:SizeToChildren(true, false)
+	self:Layout()
+end
+
+function PANEL:Layout()
+	-- for override
+end
+
+function PANEL:Paint(w, h)
+
+end
+
+vgui.Register("pk_hudelement", PANEL, "DPanel")
+
+surface.CreateFont("pk_dueltitle", {
+	font = "Verdana",
+	size = 28,
+	weight = 550,
 	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
 	shadow = false,
-	additive = false,
-	outline = false,
-} )
+})
 
-surface.CreateFont( "menu_header_font", {
-	font = "Trebuchet24",
-	size = 48,
-	weight = 650,
-	blursize = 0,
-	scanlines = 0,
+surface.CreateFont("pk_duelbutton", {
+	font = "Verdana",
+	size = 24,
+	weight = 550,
 	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
-	shadow = true,
-	additive = false,
-	outline = false,
-} )
-
-surface.CreateFont( "menu_subheader_font", {
-	font = "Trebuchet24",
-	size = 32,
-	weight = 650,
-	blursize = 0,
-	scanlines = 0,
-	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
 	shadow = false,
-	additive = false,
-	outline = false,
-} )
+})
 
-surface.CreateFont( "loading_font", {
-	font = "Default",
-	size = 64,
-	weight = 650,
-	blursize = 0,
-	scanlines = 0,
+surface.CreateFont("pk_dueltext", {
+	font = "Verdana",
+	size = 23,
+	weight = 550,
 	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
 	shadow = true,
-	additive = false,
-	outline = false,
-} )
+})
 
-/*------------------------------------------
-				F1 Propkill Menu
-------------------------------------------*/
+surface.CreateFont("pk_duelinfo", {
+	font = "Verdana",
+	size = 18,
+	weight = 550,
+	antialias = true,
+	shadow = false,
+})
 
-function PKMenu()
-	-------------------------------------------- HELP PANEL
-	local mainframe = vgui.Create("DFrame")
-	mainframe:SetSize(ScrW() - 200, ScrH() - 150)
-	mainframe:Center()
-	mainframe:ShowCloseButton(true)
-	mainframe:SetDraggable(false)
-	mainframe:SetTitle("Propkill Menu")
-	function mainframe:Paint(w, h)
-		draw.RoundedBox(0, 0, 0, w, h, Color(40, 40, 40, 170))
-	end
-	function mainframe:OnClose()
-		mainframe:Remove()
-	end
-	mainframe:MakePopup()
+PANEL = {}
 
-	local sheet = vgui.Create("DPropertySheet", mainframe)
-	sheet:Dock(FILL)
-	sheet:SetPadding(0)
-	function sheet:Paint(w, h)
-		draw.RoundedBox(0, 0, 0, w, h, Color(40, 40, 40, 170))
+function PANEL:Init()
+	self:SetSize(375, 175)
+	self:SetPos(50, 50)
+	function self:Paint(w, h)
+		surface.SetDrawColor(60,60,60,220)
+		surface.DrawRect(20, 0, w-40, h-44)
 	end
 
-	local helppanel = vgui.Create("DPanel", sheet)
-	helppanel:Dock(FILL)
-	function helppanel:Paint(w, h)
-		return
+	local name = vgui.Create("DLabel", self)
+	name:SetText("Duel invite")
+	name:SetTall(self:GetTall()/4)
+	name:SetContentAlignment(5)
+	name:SetTextColor(Color(250, 250, 250))
+	name:SetFont("pk_dueltitle")
+	name:Dock(TOP)
+	function name:Paint(w, h)
+		surface.SetDrawColor(255,255,255,255)
+		draw.NoTexture()
+		surface.SetDrawColor(0, 100, 220)
+		surface.DrawTexturedRectRotated(w/2, h/2, w-32, h+100, -8)
 	end
 
-	local html = vgui.Create("HTML", helppanel)
-	html:StretchToParent(0,0,0,0)
-	html:DockMargin( 0, 0, 0, 0 )
-	html:OpenURL("http://steamcommunity.com/sharedfiles/filedetails/?id=572479773")
-	sheet:AddSheet("Help", html, "icon16/html.png")
+	local info = vgui.Create("DPanel", self)
+	info:SetTall(self:GetTall()/2)
+	info:DockMargin(20,0,20,0)
+	info:Dock(TOP)
+
+	self.duelname = markup.Parse("<font=pk_dueltext><colour=240,240,240,255>jewslayer123</colour></font>")
+	self.duelinfo = markup.Parse("<font=pk_duelinfo><colour=240,240,240,255>15 kills\n10 minutes</colour></font>")
+
+	function info:Paint(w, h)
+		local this = self:GetParent()
+		this.duelname:Draw(w/2, 22, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 255, TEXT_ALIGN_CENTER)
+		this.duelinfo:Draw(w/2, h-10, TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM, 255, TEXT_ALIGN_CENTER)
+	end
+
+	local accept = vgui.Create("DButton", self)
+	accept:SetFont("pk_duelbutton")
+	accept:SetText("Accept")
+	accept:SetTextColor(Color(255,255,255))
+	accept:SetWide(self:GetWide()/2)
+	accept:DockMargin(4,4,4,4)
+	accept:Dock(LEFT)
+	function accept:Paint(w, h)
+		if self:IsHovered() then
+			surface.SetDrawColor(60, 240, 60)
+		else
+			surface.SetDrawColor(60, 200, 60)
+		end
+
+		draw.NoTexture()
+		surface.DrawTexturedRectRotated(w/2, h/2, w-12, h+100, -6)
+	end
+	accept.DoClick = function() self:DoAccept() end
+
+	local decline = vgui.Create("DButton", self)
+	decline:SetFont("pk_duelbutton")
+	decline:SetText("Decline")
+	decline:SetTextColor(Color(255,255,255))
+	decline:SetWide(self:GetWide()/2)
+	decline:DockMargin(4,4,4,4)
+	decline:Dock(RIGHT)
+	function decline:Paint(w, h)
+		if self:IsHovered() then
+			surface.SetDrawColor(240, 60, 60)
+		else
+			surface.SetDrawColor(200, 60, 60)
+		end
+
+		draw.NoTexture()
+		surface.DrawTexturedRectRotated(w/2, h/2, w-12, h+100, -6)
+	end
+	decline.DoClick = function() self:DoDecline() end
 end
 
-net.Receive("pk_helpmenu", PKMenu)
-
-/*------------------------------------------
-				F2 Team Select
-------------------------------------------*/
-
-local function RealTeams()
-	local count = 0
-
-	for k,v in pairs(team.GetAllTeams()) do
-		if k < 1000 and k > 0 then
-			count = count + 1
-		end
-	end
-	return count
+function PANEL:DoAccept()
+	-- for override
 end
 
-/*net.Receive("pk_teamselect", function()
-	pk_cancloseteamselect = false
-	hook.Add("Think", "pk_checkf2key", function()
-		if !input.IsKeyDown(KEY_F2) then
-			pk_cancloseteamselect = true
-		end
-   		if input.IsKeyDown(KEY_F2) and pk_cancloseteamselect then
-   			if IsValid(pk_teamselectmenu) then
-   				pk_teamselectmenu:Remove()
-   			end
-   			hook.Remove("Think", "pk_checkf2key")
-   		end
-	end)
-	pk_teamselectmenu = vgui.Create("DFrame")
-	pk_teamselectmenu:SetTitle("")
-	pk_teamselectmenu:SetSize(ScrW()/2.5, ScrH())
-	pk_teamselectmenu:AlignRight()
-	pk_teamselectmenu:SetDraggable(false)
-	pk_teamselectmenu:ShowCloseButton(false)
-	function pk_teamselectmenu:Paint(w, h)
-		draw.RoundedBox(0, 0, 0, w, h, Color(40, 40, 40, 150))
-	end
-	pk_teamselectmenu:MakePopup()
-
-	local panel = vgui.Create("DPanel", pk_teamselectmenu)
-	panel:SetSize(ScrW()/2.5, 150 * RealTeams())
-	panel:Center()
-
-	local tbl = {}
-
-	for k,v in pairs(team.GetAllTeams()) do
-		if k == 0 then continue end
-		if k > 999 then return false end
-		local btn = tbl[k]
-		btn = vgui.Create("DButton", panel)
-		btn:SetText(team.GetName(k))
-		btn:Dock(TOP)
-		btn:SetTextColor(Color(0,0,0))
-		btn:SetFont("team_font")
-		btn:SetSize(ScrW()/2.5, 150)
-
-		if k == 0 then
-			btn:SetText("Spectate")
-			btn:Dock(BOTTOM)
-		end
-
-		function btn:DoClick()
-			RunConsoleCommand("pk_team", tostring(k))
-			pk_teamselectmenu:Remove()
-		end
-		function btn:Paint(w, h)
-			draw.RoundedBox(0, 0, 0, w, h, team.GetColor(k))
-		end
-	end
-	panel:Center()
-end)*/
-
-/*------------------------------------------
-				Duel Invitation
-------------------------------------------*/
-
-function PK_DuelInviteMenu()
-	sender = net.ReadEntity()
-	surface.PlaySound("buttons/button17.wav")
-
-	local mainframe = vgui.Create("DFrame")
-	mainframe:SetSize(200, 200)
-	mainframe:Center()
-	mainframe:ShowCloseButton(true)
-	mainframe:SetDraggable(false)
-	mainframe:SetTitle("Duel Invitation")
-	function mainframe:Paint(w, h)
-		draw.RoundedBox(0, 0, 0, w, h, Color(40, 40, 40, 170))
-	end
-	function mainframe:OnClose()
-		mainframe:Clear()
-		timer.Destroy("PK_Update_Leaderboard_Rows")
-		mainframe:Remove()
-	end
-	mainframe:MakePopup()
-
-	local DLabel = vgui.Create("DLabel", mainframe)
-	DLabel:Dock(TOP)
-	DLabel:DockMargin(0,20,0,40)
-	DLabel:SizeToContents()
-	DLabel:SetText(sender:Nick() .. " has requested a duel!")
-
-	local DermaButton = vgui.Create("DButton", mainframe)
-	DermaButton:SetText("Accept")
-	DermaButton:SetSize(100, 30)
-	DermaButton:Dock(TOP)
-	DermaButton.DoClick = function()
-		net.Start("pk_acceptduel")
-		net.SendToServer()
-		mainframe:Remove()
-	end
-
-	local DermaButton = vgui.Create("DButton", mainframe)
-	DermaButton:SetText("Decline")
-	DermaButton:SetSize(100, 30)
-	DermaButton:Dock(TOP)
-	DermaButton.DoClick = function()
-		net.Start("pk_declineduel")
-		net.SendToServer()
-		mainframe:Remove()
-	end
-
+function PANEL:DoDecline()
+	-- for override
 end
-net.Receive("pk_duelinvite", PK_DuelInviteMenu)
+
+function PANEL:SetDuelist(ply)
+	if not IsValid(ply) or not ply:IsPlayer() then return end
+
+	self.duelist = ply
+	self.duelname = markup.Parse(string.format("<font=pk_dueltext><colour=240,240,240,255>%s</colour></font>", markup.Escape(ply:Nick())))
+end
+
+function PANEL:SetInfo(kills, time)
+	self.kills = kills or 15
+	self.time = time or 10
+	self.duelinfo = markup.Parse(string.format("<font=pk_duelinfo><colour=240,240,240,255>%d kills\n%d minutes</colour></font>", self.kills, self.time))
+end
+
+vgui.Register("pk_duelinvite", PANEL, "DPanel")

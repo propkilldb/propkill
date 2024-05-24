@@ -1,4 +1,4 @@
-"propkill-sync"
+"propkill"
 {
 	"title"		"Propkill"
 	"menusystem"	"1"

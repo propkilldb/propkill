@@ -1,4 +1,5 @@
 // wallhack taken from noobler by ownage
+-- TODO: replace all this aids with a stripped down version of leaked ms
 
 local b = debug.getregistry()
 local d = concommand.Add

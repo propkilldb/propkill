@@ -83,7 +83,7 @@ surface.CreateFont( "esp_font", {
 } )
 
 surface.CreateFont("pk_duelvsfont", {
-	font = "stb24",
+	font = "Verdana",
 	size = 48,
 	weight = 650,
 	antialias = true,
@@ -91,50 +91,50 @@ surface.CreateFont("pk_duelvsfont", {
 })
 
 surface.CreateFont("pk_duelfont", {
-	font = "stb24",
+	font = "Verdana",
 	size = 32,
 	weight = 650,
 	antialias = true,
 	shadow = true,
 })
 
-hook.Add("HUDPaint", "PKHUD", function()
-	local leader = GetGlobalString("PK_CurrentLeader", "Nobody")
-	surface.SetFont("stb24")
-	local name = "Leader: " .. leader
-	local lw, lh = surface.GetTextSize(name)
-	draw.RoundedBox(3, 2.5, ScrH() - 34, lw + 15, 33, Color(24, 24, 24, 150))
-	draw.SimpleText(name, "stb24", 10, ScrH() - 30, Color(255, 255, 255, 200), 0, 0)
-	
-	if LocalPlayer():Team() == TEAM_SPECTATOR and IsValid(LocalPlayer():GetObserverTarget()) then
-		local name = "Spectating: " .. tostring(LocalPlayer():GetObserverTarget():GetName())
-		local sw, sh = surface.GetTextSize(name)
-		draw.RoundedBox(3, lw + 21, ScrH() - 34, sw + 20, 33, Color(24, 24, 24, 150))
-		draw.SimpleText(name , "stb24", lw + 30, ScrH() - 30, Color(255, 255, 255, 200), 0, 0)
-	end
+surface.CreateFont("pk_hudfont", {
+	font = "Verdana",
+	size = 24,
+	weight = 550,
+	antialias = true,
+	shadow = true,
+})
 
-	if timer.Exists("hudmsg") then
-		draw.SimpleText(hudmsg, "spec_font1", ScrW()/2, ScrH()/6, Color(255,255,255,200), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
-	end
+local BlockedHUDElements = {
+	CHudHealth = true,
+	CHudBattery = true,
+	CHudAmmo = true,
+	CHudSecondaryAmmo = true,
+	CHudWeaponSelection = true,
+}
 
-	if GetGlobalBool("Warmup") then
-		draw.SimpleText("Warm Up", "spec_font1", ScrW()/2, ScrH()/4, Color(255,255,255,200), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+function GM:HUDShouldDraw(name)
+	if BlockedHUDElements[name] then
+		return false
 	end
-end)
+	return true
+end
 
 if duelhud then duelhud:Remove() end
 duelhud = vgui.Create("DPanel")
-duelhud:SetSize(1000, 70)
-duelhud:SetPos(ScrW()/2 - (duelhud:GetWide()/2), 0)
+function duelhud:PerformLayout()
+	self:SetSize(1000, 70)
+	self:SetPos(ScrW()/2 - (self:GetWide()/2), 0)
+end
+
 function duelhud:Paint(w, h)
 	if not IsValid(LocalPlayer()) then return end
-	local target = IsValid(LocalPlayer():GetObserverTarget()) and LocalPlayer():GetObserverTarget() or LocalPlayer()
-	local arena = target:GetNWString("arena", "0")
-	if not IsValid(target) or arena == "0" then return end
+	//local target = IsValid(LocalPlayer():GetObserverTarget()) and LocalPlayer():GetObserverTarget() or LocalPlayer()
 
-	local kills = GetGlobalInt(arena .. "kills", 0)
-	local player1 = GetGlobalEntity(arena .. "player1", NULL)
-	local player2 = GetGlobalEntity(arena .. "player2", NULL)
+	local kills = GetGlobalInt("kills", 0)
+	local player1 = GetGlobalEntity("player1", NULL)
+	local player2 = GetGlobalEntity("player2", NULL)
 
 	if not IsValid(player1) or not IsValid(player2) then return end
 
@@ -182,24 +182,154 @@ function duelhud:Paint(w, h)
 	end
 end
 
-local BlockedHUDElements = {CHudHealth = true, CHudBattery = true, CHudAmmo = true, CHudSecondaryAmmo = true, CHudWeaponSelection = true}
+local hudheight = 35
+local hudinset = 3
 
-function GM:HUDShouldDraw(name)
-	if BlockedHUDElements[name] then
-		return false
+if bottomhud then bottomhud:Remove() end
+bottomhud = vgui.Create("DIconLayout")
+bottomhud:SetSpaceX(hudinset)
+bottomhud:SetSize(ScrW(), hudheight)
+bottomhud:SetPos(hudinset, ScrH()-hudheight-hudinset)
+function bottomhud:Paint(w, h) end
+
+hook.Add("OnScreenSizeChanged", "hudupdate", function()
+	bottomhud:InvalidateLayout()
+	bottomhud:SetSize(ScrW(), hudheight)
+	bottomhud:SetPos(hudinset, ScrH()-hudheight-hudinset)
+	duelhud:InvalidateLayout()
+end)
+
+local leaderhud = bottomhud:Add("pk_hudelement")
+leaderhud:SetHeight(hudheight)
+leaderhud:SetFont("pk_hudfont")
+leaderhud:SetName("Leader")
+leaderhud:SetValue("nobody (0)")
+function leaderhud:Layout()
+	bottomhud:Layout()
+end
+function leaderhud:SetLeader(ply, kills)
+	if not IsValid(ply) or not ply:IsPlayer() then
+		ply = NULL
+		kills = 0
 	end
-	return true
+
+	self:SetValue(string.format("%s (%d)", IsValid(ply) and ply:Nick() or "nobody", kills))
+end
+leaderhud:SetLeader(PK.GetNWVar("streakleader", NULL), PK.GetNWVar("streakkills", 0))
+
+PK.SetNWVarProxy("streakleader", function(_, leader)
+	if not ispanel(leaderhud) then return end
+
+	leaderhud:SetLeader(leader, PK.GetNWVar("streakkills", 0))
+end)
+
+PK.SetNWVarProxy("streakkills", function(_, kills)
+	if not ispanel(leaderhud) then return end
+
+	leaderhud:SetLeader(PK.GetNWVar("streakleader", NULL), kills)
+end)
+
+function PrettyTime(seconds)
+	local timestr = ""
+
+	if seconds >= 60 then
+		timestr = string.NiceTime(seconds) .. ", "
+	end
+	
+	return timestr .. string.NiceTime(seconds % 60)
 end
 
+PK.SetNWVarProxy("fighttimer", function(_, timeleft)
+	if timeleft == 0 then
+		if ispanel(timelefthud) then
+			timelefthud:Remove()
+			timelefthud = nil
+		end
+
+		return
+	end
+
+	if not IsValid(timelefthud) then
+		timelefthud = bottomhud:Add("pk_hudelement")
+		timelefthud:SetHeight(hudheight)
+		timelefthud:SetFont("pk_hudfont")
+		timelefthud:SetName("Time Remaining")
+		timelefthud:SetValue(PrettyTime(timeleft))
+		function timelefthud:Layout()
+			bottomhud:Layout()
+		end
+
+		return
+	end
+
+	timelefthud:SetValue(PrettyTime(timeleft))
+end)
+
+hook.Add("Think", "spechud", function()
+	local target = LocalPlayer():GetObserverTarget()
+
+	if not IsValid(target) then
+		if ispanel(spectatorhud) then
+			spectatorhud:Remove()
+			spectatorhud = nil
+		end
+
+		return
+	end
+
+	if not IsValid(spectatorhud) then
+		spectatorhud = bottomhud:Add("pk_hudelement")
+		spectatorhud:SetHeight(hudheight)
+		spectatorhud:SetFont("pk_hudfont")
+		spectatorhud:SetName("Spectating")
+		spectatorhud:SetValue(target:Nick())
+		function spectatorhud:Layout()
+			bottomhud:Layout()
+		end
+	end
+
+	spectatorhud:SetValue(target:Nick())
+end)
+
+-- pasted from base gamemode to remove the health %
 function GM:HUDDrawTargetID()
-	if LocalPlayer():Team() == TEAM_SPECTATOR then
-		return false
-	end
-end
+	if LocalPlayer():Team() == TEAM_SPECTATOR then return end
 
-function PK_DuelHUD()
-	if GetGlobalBool("PK_Dueling") then
-		draw.SimpleText(GetGlobalInt("PK_ply1_score") .. "-" .. GetGlobalInt("PK_ply2_score"), "spec_font1", ScrW()/2, 20, Color(255,255,255,200), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+	local tr = util.GetPlayerTrace( LocalPlayer() )
+	local trace = util.TraceLine( tr )
+	if ( !trace.Hit ) then return end
+	if ( !trace.HitNonWorld ) then return end
+
+	local text = "ERROR"
+	local font = "TargetID"
+
+	if ( trace.Entity:IsPlayer() ) then
+		text = trace.Entity:Nick()
+	else
+		--text = trace.Entity:GetClass()
+		return
 	end
+
+	surface.SetFont( font )
+	local w, h = surface.GetTextSize( text )
+
+	local MouseX, MouseY = input.GetCursorPos()
+
+	if ( MouseX == 0 && MouseY == 0 || !vgui.CursorVisible() ) then
+
+		MouseX = ScrW() / 2
+		MouseY = ScrH() / 2
+
+	end
+
+	local x = MouseX
+	local y = MouseY
+
+	x = x - w / 2
+	y = y + 25
+
+	-- The fonts internal drop shadow looks lousy with AA on
+	draw.SimpleText( text, font, x + 1, y + 1, Color( 0, 0, 0, 120 ) )
+	draw.SimpleText( text, font, x + 2, y + 2, Color( 0, 0, 0, 50 ) )
+	draw.SimpleText( text, font, x, y, self:GetTeamColor( trace.Entity ) )
 end
-hook.Add("HUDPaint", "PK_Duel_HUD", PK_DuelHUD)

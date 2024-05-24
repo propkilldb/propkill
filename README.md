@@ -1,3 +1,3 @@
-# Propkill sync
+# Propkill
 
-synchronise players and props between servers for globally low ping propkilling
+basic propkill gamemode with duels

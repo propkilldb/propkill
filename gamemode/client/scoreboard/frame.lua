@@ -1,5 +1,5 @@
 surface.CreateFont("pk_scoreboardfont", {
-	font = "stb24",
+	font = "Verdana",
 	size = 32,
 	weight = 650,
 	antialias = true,
@@ -7,7 +7,7 @@ surface.CreateFont("pk_scoreboardfont", {
 })
 
 surface.CreateFont("pk_scoreboardfont2", {
-	font = "stb24",
+	font = "Verdana",
 	size = 16,
 	weight = 650,
 	antialias = true,
@@ -49,8 +49,6 @@ surface.CreateFont("pk_arenasubfont", {
 	weight = 950,
 	antialias = true,
 })
-
-local isopen = false
 
 local menutabs = {
 	{name = "Scoreboard", panel = include("scoreboard.lua")},
@@ -163,10 +161,10 @@ function PK.CreateMenu()
 
 	end
 
-	function frame:Show(sel)
+	function frame:Show(sel, ...)
 		for k,v in pairs(tabs.Items) do
 			if IsValid(v.Panel) and v.Panel.Refresh != nil then
-				v.Panel:Refresh()
+				v.Panel:Refresh(...)
 			end
 
 			if isstring(sel) and sel == v.Name then
@@ -184,13 +182,13 @@ if PK.menu and IsValid(PK.menu) then
 	PK.menu = PK.CreateMenu()
 end
 
-function GM:ScoreboardShow(tab)
+function GM:ScoreboardShow(tab, ...)
 	if not IsValid(PK.menu) then
 		PK.menu = PK.CreateMenu()
 	end
-	//gui.EnableScreenClicker(true)
+	gui.EnableScreenClicker(true)
 	//RestoreCursorPosition()
-	PK.menu:Show(tab or "Scoreboard")
+	PK.menu:Show(tab or "Scoreboard", ...)
 end
 
 function GM:ScoreboardHide()
@@ -214,9 +212,3 @@ hook.Add("InitPostEntity", "create menu", function()
 	end
 end)
 
-hook.Add("CreateMove", "enablemouseonclick", function()
-	if IsValid(PK.menu) and (input.WasMousePressed(MOUSE_LEFT) or input.WasMousePressed(MOUSE_RIGHT)) and PK.menu:IsVisible() then
-		gui.EnableScreenClicker(true)
-		//RestoreCursorPosition()
-	end
-end)

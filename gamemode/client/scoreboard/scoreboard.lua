@@ -137,7 +137,7 @@ function PANEL:RefreshScoreboard()
 			avatar:SetSize(28, 28)
 			avatar:DockMargin(4,4,0,4)
 			avatar:Dock(LEFT)
-			avatar:SetSteamID(util.SteamIDTo64(vv:IsBot() and vv:GetNWString("sync_steamid", nil) or vv:SteamID()), 28)
+			avatar:SetSteamID(util.SteamIDTo64(vv:SteamID()), 28)
 			avatar.button = vgui.Create("DButton", avatar)
 			avatar.button:Dock(FILL)
 			avatar.button:SetText("")
@@ -145,8 +145,6 @@ function PANEL:RefreshScoreboard()
 			function avatar.button:DoClick()
 				if not vv:IsBot() then
 					vv:ShowProfile()
-				else
-					gui.OpenURL("https://steamcommunity.com/profiles/" .. util.SteamIDTo64(vv:GetNWString("sync_steamid", 0)))
 				end
 			end
 
@@ -199,14 +197,14 @@ function PANEL:RefreshScoreboard()
 			for k,v in pairs(prow:GetChildren()) do
 				v:SetText("")
 				v.DoRightClick = function()
+					if vv == LocalPlayer() then return end
+
 					local right = vgui.Create("DMenu", v)
 					local arena = vv:GetNWString("arena")
 
 					right:AddOption("Profile", function()
 						if not vv:IsBot() then
 							vv:ShowProfile()
-						else
-							gui.OpenURL("https://steamcommunity.com/profiles/" .. util.SteamIDTo64(vv:GetNWString("sync_steamid", 0)))
 						end
 					end)
 					if IsValid(PK.arenas[arena]) and LocalPlayer():GetNWString("arena") != arena then
@@ -220,6 +218,9 @@ function PANEL:RefreshScoreboard()
 						net.Start("PK_SpectatePlayer")
 							net.WriteEntity(vv)
 						net.SendToServer()
+					end)
+					right:AddOption("Duel", function()
+						GAMEMODE.ScoreboardShow(GAMEMODE, "Duel", vv)
 					end)
 					right:AddOption((vv:IsMuted() and "Unmute" or "Mute"), function()
 						vv:SetMuted(not vv:IsMuted())

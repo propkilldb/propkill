@@ -13,6 +13,7 @@ local function GetValidPlayers(tbl)
 	return ret
 end
 
+// i guess i didnt know about the next() function when i made this
 function GetNextPlayer(spectator, spectating)
 	local players = GetValidPlayers()
 	local picknext = false
@@ -42,6 +43,8 @@ function GetNextPlayer(spectator, spectating)
 	if not IsValid(choice) then
 		for k,v in pairs(players) do
 			choice = v
+			-- continue after in case they are the only player on the server
+			if v == spectator then continue end
 			break
 		end
 	end
@@ -62,31 +65,38 @@ hook.Add("KeyPress", "speccontrols", function(ply, key)
 		if key == IN_ATTACK then
 			if IsValid(next) then
 				ply:SpectateEntity(next)
-				ply:SetNWString("arena", next:GetNWString("arena", "0"))
 			end
 		elseif key == IN_ATTACK2 then
 			if IsValid(prev) then
 				ply:SpectateEntity(prev)
-				ply:SetNWString("arena", prev:GetNWString("arena", "0"))
 			end
 		elseif key == IN_RELOAD then
-			if ply:GetObserverMode() == OBS_MODE_IN_EYE then
-				ply:Spectate(OBS_MODE_ROAMING)
-			else
+			if ply:GetObserverMode() == OBS_MODE_ROAMING then
 				ply:Spectate(OBS_MODE_IN_EYE)
+			elseif ply:GetObserverMode() == OBS_MODE_IN_EYE then
+				ply:Spectate(OBS_MODE_CHASE)
+			else
+				ply:Spectate(OBS_MODE_ROAMING)
 			end
 		elseif key == IN_USE then
 			ply:StopSpectating()
-			ply:SetNWString("arena", "0")
 		end
 	end
 end)
 
-function meta:SetSpectating(target)
-	if not GAMEMODE:PlayerCanJoinTeam(self, TEAM_SPECTATOR) then return end
-	if IsValid(target) and target:IsPlayer() and target:Team() == TEAM_SPECTATOR then return end
+function meta:SetSpectating(target, force)
+	if not force and hook.Run("PK_CanSpectate", self) == false then return end
+	if not IsValid(target) or not target:IsPlayer() or target:Team() == TEAM_SPECTATOR then
+		target = GetNextPlayer(self)
+	end
 
 	self:CleanUp()
+	self.OriginalFlashlightState = self:CanUseFlashlight()
+	if self:FlashlightIsOn() then
+		self:Flashlight(false)
+	end
+	self:AllowFlashlight(false)
+
 	self:SetTeam(TEAM_SPECTATOR)
 	self:SetCollisionGroup(COLLISION_GROUP_NONE)
 	self:SetSolid(SOLID_NONE)
@@ -103,15 +113,16 @@ function meta:SetSpectating(target)
 	self:SpectateEntity(target)
 	self:SetNWString("arena", target:GetNWString("arena", "0"))
 
-	if not self.firstSpectate then
-		self:ChatPrint("Press R for freecam or E to stop spectating")
-		self.firstSpectate = true
-	end
+	//if not self.firstSpectate then
+		self:ChatPrint("Press E to stop spectating, or R to switch spectator modes")
+		//self.firstSpectate = true
+	//end
 end
 
-function meta:StopSpectating()
-	if not GAMEMODE:PlayerCanJoinTeam(self, TEAM_DEATHMATCH) then return end
+function meta:StopSpectating(force)
+	if not force and hook.Run("PK_CanStopSpectating", self) == false then return end
 
+	self:AllowFlashlight(self.OriginalFlashlightState or true)
 	self:SetTeam(TEAM_DEATHMATCH)
 	self:UnSpectate()
 	self:SetCollisionGroup(COLLISION_GROUP_PLAYER)
@@ -123,6 +134,12 @@ util.AddNetworkString("PK_SpectatePlayer")
 net.Receive("PK_SpectatePlayer", function(len, ply)
 	local target = net.ReadEntity()
 	ply:SetSpectating(target)
+end)
+
+hook.Add("CanPlayerSuicide", "no spec suicide", function(ply)
+	if ply:Team() == TEAM_SPECTATOR then
+		return false
+	end
 end)
 
 function GM:PlayerCanJoinTeam(ply, teamid)

@@ -67,12 +67,15 @@ function PANEL:Init()
 	self:Refresh()
 end
 
-function PANEL:Refresh()
+function PANEL:Refresh(toselect)
 	self.opponentselect:Clear()
 
 	for k,v in pairs(player.GetAll()) do
 		if v != LocalPlayer() then
-			self.opponentselect:AddChoice(v:Nick(), v)
+			local id = self.opponentselect:AddChoice(v:Nick(), v)
+			if v == toselect then
+				self.opponentselect:ChooseOptionID(id)
+			end
 		end
 	end
 end

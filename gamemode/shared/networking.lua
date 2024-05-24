@@ -4,32 +4,34 @@ if SERVER then
 end
 
 PK.netCache = PK.netCache or {}
+PK.netProxies = PK.netProxies or {}
 
-local networktypes = {
-	String = "String",
-	Bool = "Bool",
-	Table = "Table",
-	Number = "Double",
-	Entity = "Entity"
-}
+function PK.GetNWVar(id, default)
+	return PK.netCache[id] or default
+end
 
-for k,v in pairs(networktypes) do
-	PK["GetNW" .. k] = function(id, default)
-		return PK.netCache[id] or default
-	end
+function PK.SetNWVarProxy(id, func)
+	if id == nil then return end
+	if not isfunction(func) then return end
+
+	PK.netProxies[id] = func
 end
 
 if SERVER then
-	for k,v in pairs(networktypes) do
-		PK["SetNW" .. k] = function(id, value)
-			if id == nil then return end
-			PK.netCache[id] = value
-			net.Start("PK_Networking")
-				net.WriteString(id)
-				net.WriteString(v)
-				net["Write" .. v](value)
-			net.Broadcast()
+	function PK.SetNWVar(id, value)
+		if id == nil then return end
+		if PK.netCache[id] == value then return end
+
+		if PK.netProxies[id] then
+			PK.netProxies[id](PK.netCache[id], value)
 		end
+
+		PK.netCache[id] = value
+
+		net.Start("PK_Networking")
+			net.WriteString(id)
+			net.WriteType(value)
+		net.Broadcast()
 	end
 
 	net.Receive("PK_NetworkingReady", function(len, ply)
@@ -42,13 +44,24 @@ end
 if CLIENT then
 	net.Receive("PK_Networking", function()
 		local id = net.ReadString()
-		local vartype = net.ReadString()
-		local value = net["Read" .. vartype]()
+		local value = net.ReadType()
+
+		if PK.netProxies[id] then
+			PK.netProxies[id](PK.netCache[id], value)
+		end
+		
 		PK.netCache[id] = value
 	end)
 
 	net.Receive("PK_NetworkingReady", function()
-		PK.netCache = net.ReadTable()
+		local netvars = net.ReadTable()
+		for id, value in next, netvars do
+			if PK.netProxies[id] then
+				PK.netProxies[id](PK.netCache[id], value)
+			end
+			
+			PK.netCache[id] = value
+		end
 	end)
 
 	hook.Add("InitPostEntity", "PK_NetworkingReady", function()

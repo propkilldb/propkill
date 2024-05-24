@@ -19,6 +19,13 @@ function GM:CreateTeams()
 	team.SetUp(TEAM_SPECTATOR, "Spectator", Color(120, 120, 120, 255))
 end
 
+// modules
+AddCSLuaFile("modules/autoundo.lua")
+include("modules/autoundo.lua")
+AddCSLuaFile("modules/spawnfix.lua")
+include("modules/spawnfix.lua")
+
+
 --remove bhop clamp
 local base = baseclass.Get('player_sandbox')
 base['FinishMove'] = function() end
