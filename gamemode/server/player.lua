@@ -182,6 +182,21 @@ function GM:PlayerDeath(ply, inflictor, attacker)
 	end)
 end
 
+hook.Add("PlayerDeath", "streak end chat message", function(ply, inflictor, attacker)
+	if not IsValid(inflictor) or not inflictor:GetClass() == "prop_physics" then return end
+	attacker = inflictor.Owner
+	if not IsValid(attacker) or not attacker:IsPlayer() then return end
+
+	if ply.PKStreak and ply.PKStreak > 7 then
+		ChatMsg({
+			Color(0,120,255), attacker:Nick(),
+			Color(255,255,255), " just ended ",
+			Color(0,120,255), attacker == ply and "their own " or ply:Nick() .. "'s ",
+			Color(255,255,255), tostring(ply.PKStreak), " kill streak"
+		})
+	end
+end)
+
 function GM:PlayerConnect(name, ip)
 	ChatMsg({Color(120,120,255), name, Color(255,255,255), " is connecting"})
 end

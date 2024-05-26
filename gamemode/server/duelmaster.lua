@@ -198,6 +198,8 @@ function CleanupDuelmaster()
 end
 
 concommand.Add("duelmaster", function(ply, cmd, args, str)
+	if not ply:IsAdmin() then return end
+	
 	local kills = tonumber(args[1])
 	if not isnumber(kills) then
 		kills = 8
