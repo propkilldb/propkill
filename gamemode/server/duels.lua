@@ -155,8 +155,6 @@ event:StartFunc(function(ply1, ply2, kills, time, ranked)
 	ply1:StopSpectating(true)
 	ply2:StopSpectating(true)
 
-	event:Start()
-
 	ResetKillstreak()
 
 	-- TODO: store their original spectate state?

@@ -5,7 +5,6 @@ include("client/duels.lua")
 include("client/hud.lua")
 include("client/hax.lua")
 include("client/base.lua")
-include("client/commands.lua")
 include("shared/entity.lua")
 
 // derma

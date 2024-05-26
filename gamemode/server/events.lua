@@ -14,6 +14,8 @@ function newEvent(name)
 	eventthing.name = name
 	eventthing.hooks = {}
 
+	PK.events[name] = eventthing
+
 	return eventthing
 end
 
@@ -60,4 +62,8 @@ function eventmeta:End(...)
 	for k, v in next, self.hooks do
 		hook.Remove(v.eventName, v.hookName)
 	end
+end
+
+function eventmeta:IsValid()
+	return true
 end

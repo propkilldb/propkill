@@ -145,8 +145,8 @@ function PANEL:Init()
 	info:DockMargin(20,0,20,0)
 	info:Dock(TOP)
 
-	self.duelname = markup.Parse("<font=pk_dueltext><colour=240,240,240,255>jewslayer123</colour></font>")
-	self.duelinfo = markup.Parse("<font=pk_duelinfo><colour=240,240,240,255>15 kills\n10 minutes</colour></font>")
+	self.duelname = markup.Parse("<font=pk_dueltext><colour=240,240,240,255>loading...</colour></font>")
+	self.duelinfo = markup.Parse("<font=pk_duelinfo><colour=240,240,240,255>loading...</colour></font>")
 
 	function info:Paint(w, h)
 		local this = self:GetParent()
