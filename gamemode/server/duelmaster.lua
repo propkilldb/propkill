@@ -28,7 +28,7 @@ event:Hook("PlayerDeath", "select next duelist", function(ply1)
 		event:End(ply2)
 		return
 	end
-	print(ply1, "died, awarding point to ", ply2)
+
 	DespawnDuelist(ply1)
 	SpawnNextDuelist(ply2)
 end)
@@ -42,7 +42,6 @@ function SpawnNextDuelist(opponent)
 	ply.opponent = opponent
 	opponent.opponent = ply
 	ply:StopSpectating(true)
-	print(ply, "is the new duelist against", opponent)
 
 	if not GetGlobalEntity("player1", NULL).dueling then
 		SetGlobalEntity("player1", ply)
@@ -60,7 +59,6 @@ function DespawnDuelist(ply)
 	ply.opponent = nil
 
 	table.insert(queue, ply)
-	print(ply, "was added back into the queue")
 end
 
 -- for when they're afk or disconnect
@@ -82,7 +80,11 @@ function DeleteDuelist(ply)
 end
 
 event:StartFunc(function(kills)
-	if #player.GetAll() < 3 then print("not enough players") return end
+	if #player.GetAll() < 3 then
+		print("not enough players")
+		event:End()
+		return
+	end
 	kills = kills or 8
 
 	queue = table.Copy(player.GetAll())
@@ -128,8 +130,14 @@ event:StartFunc(function(kills)
 		ply2:Freeze(false)
 	end)
 
+	ChatMsg({
+		Color(0,120,255), "Starting DuelMaster",
+		Color(255,255,255), " event to ",
+		Color(0,120,255), tostring(kills),
+		Color(255,255,255), " kills",
+	})
+
 	ResetKillstreak()
-	print("starting duelmaster", ply1, ply2)
 end)
 
 event:EndFunc(function(winner)
