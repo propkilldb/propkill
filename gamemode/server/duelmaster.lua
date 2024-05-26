@@ -43,18 +43,29 @@ end)
 -- spawn the next duelist from the queue
 function SpawnNextDuelist(opponent)
 	local ply = table.remove(queue, 1)
+	if not IsValid(ply) then
+		print("[DuelMaster] next duelist wasn't valid")
+		ChatMsg({Color(255,255,255), "DualMaster broke. error picking next opponent"})
+		event:End(opponent)
+		return
+	end
 
 	ply:SetNWInt("duelscore", 0)
 	ply.dueling = true
 	ply.opponent = opponent
 	opponent.opponent = ply
-	ply:StopSpectating(true)
 
 	if not GetGlobalEntity("player1", NULL).dueling then
 		SetGlobalEntity("player1", ply)
 	else
 		SetGlobalEntity("player2", ply)
 	end
+
+	timer.Simple(1, function()
+		if not IsValid(ply) then return end
+
+		ply:StopSpectating(true)
+	end)
 
 	return ply
 end
@@ -98,6 +109,8 @@ event:StartFunc(function(kills)
 	local ply1 = table.remove(queue, 1)
 	local ply2 = table.remove(queue, 1)
 
+	if not IsValid(ply1) or not IsValid(ply2) then return false end
+
 	ply1.dueling = true
 	ply2.dueling = true
 
@@ -137,7 +150,8 @@ event:StartFunc(function(kills)
 	end)
 
 	ChatMsg({
-		Color(0,120,255), "Starting DuelMaster",
+		Color(255,255,255), "Starting ",
+		Color(0,120,255), "DuelMaster",
 		Color(255,255,255), " event to ",
 		Color(0,120,255), tostring(kills),
 		Color(255,255,255), " kills",
@@ -163,6 +177,12 @@ event:EndFunc(function(winner)
 		})
 	end
 
+	timer.Simple(2, function()
+		CleanupDuelmaster()
+	end)
+end)
+
+function CleanupDuelmaster()
 	SetGlobalEntity("player1", NULL)
 	SetGlobalEntity("player2", NULL)
 
@@ -175,4 +195,13 @@ event:EndFunc(function(winner)
 	end
 
 	ResetKillstreak()
+end
+
+concommand.Add("duelmaster", function(ply, cmd, args, str)
+	local kills = tonumber(args[1])
+	if not isnumber(kills) then
+		kills = 8
+	end
+
+	event:Start(kills)
 end)
