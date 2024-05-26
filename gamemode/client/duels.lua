@@ -41,11 +41,20 @@ function DisplayDuelInvite()
 		
 		DuelInvite:Remove()
 		DuelInvite = nil
+		timer.Remove("duelinvitetimeout")
 	end
 	function DuelInvite:DoDecline()
 		DuelInvite:Remove()
 		DuelInvite = nil
+		timer.Remove("duelinvitetimeout")
 
 		DisplayDuelInvite()
 	end
+
+	timer.Create("duelinvitetimeout", 20, 1, function()
+		if not ispanel(DuelInvite) then return end
+
+		DuelInvite:Remove()
+		DuelInvite = nil
+	end)
 end
