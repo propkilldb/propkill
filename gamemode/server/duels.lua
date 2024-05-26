@@ -12,6 +12,13 @@ event:Hook("PK_CanStopSpectating", "no, u cant join in", function(ply)
 	return false
 end)
 
+event:Hook("PlayerCheckLimit", "duel prop limit", function(ply, name, current, max)
+	-- TODO: PK.config.maxduelprops
+	if name == "props" and current >= 3 then
+		return false
+	end
+end)
+
 event:Hook("PlayerDeath", "PK_duel_ForceSpawn", function(ply)
 	timer.Simple(3, function()
 		if not ply:Alive() then

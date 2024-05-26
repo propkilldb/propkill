@@ -10,6 +10,13 @@ event:Hook("PK_CanStopSpectating", "no, u cant join in", function(ply)
 	return false
 end)
 
+event:Hook("PlayerCheckLimit", "duelmaster prop limit", function(ply, name, current, max)
+	-- TODO: PK.config.maxduelprops
+	if name == "props" and current >= 3 then
+		return false
+	end
+end)
+
 event:Hook("PlayerInitialSpawn", "add them to the queue", function(ply)
 	table.insert(queue, ply)
 end)
@@ -137,7 +144,7 @@ event:StartFunc(function(kills)
 	})
 
 	ResetKillstreak()
-	
+
 	return true
 end)
 
