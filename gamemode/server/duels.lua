@@ -136,9 +136,9 @@ function DeclineDuel(fighter, fightee)
 end
 
 event:StartFunc(function(ply1, ply2, kills, time, ranked)
-	if PK.duels.fighting then return end
-	if not IsValid(ply1) or not IsValid(ply2) then return end
-	if ply1 == ply2 then return end
+	if PK.duels.fighting then return false end
+	if not IsValid(ply1) or not IsValid(ply2) then return false end
+	if ply1 == ply2 then return false end
 
 	PK.duels.fighting = true
 
@@ -200,6 +200,8 @@ event:StartFunc(function(ply1, ply2, kills, time, ranked)
 		Color(0,120,255), ply2:Nick(),
 		Color(255,255,255), " to " .. kills .. " kills in under " .. time .. " minutes"
 	})
+
+	return true
 end)
 
 event:EndFunc(function(forfeitply)

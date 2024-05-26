@@ -28,7 +28,7 @@ function eventmeta:Hook(eventName, hookName, func)
 		func = func,
 	}
 
-	table.insert(self.hooks, hookData)
+	self.hooks[eventName .. hookName] = hookData
 end
 
 function eventmeta:StartFunc(func)
@@ -41,11 +41,16 @@ end
 
 function eventmeta:Start(...)
 	if PK.currentEvent then return end
-	PK.currentEvent = self
 
 	if self.onStartFunc then
-		self.onStartFunc(...)
+		local success = self.onStartFunc(...)
+
+		if not success then
+			return
+		end
 	end
+
+	PK.currentEvent = self
 
 	for k, v in next, self.hooks do
 		hook.Add(v.eventName, v.hookName, v.func)

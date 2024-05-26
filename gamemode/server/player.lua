@@ -235,6 +235,8 @@ function GM:GetFallDamage()
 	return 0
 end
 
+util.AddNetworkString("pk_teamselect")
+
 function GM:ShowTeam(ply) net.Start("pk_teamselect") net.Send(ply) end
 function GM:ShowHelp(ply) net.Start("pk_helpmenu") net.Send(ply) end
 function GM:ShowSpare2(ply) net.Start("pk_settingsmenu") net.Send(ply) end

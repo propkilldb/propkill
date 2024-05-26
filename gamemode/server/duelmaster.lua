@@ -82,8 +82,7 @@ end
 event:StartFunc(function(kills)
 	if #player.GetAll() < 3 then
 		print("not enough players")
-		event:End()
-		return
+		return false
 	end
 	kills = kills or 8
 
@@ -138,6 +137,8 @@ event:StartFunc(function(kills)
 	})
 
 	ResetKillstreak()
+	
+	return true
 end)
 
 event:EndFunc(function(winner)

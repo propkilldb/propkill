@@ -197,14 +197,13 @@ function GM:ScoreboardHide()
 	PK.menu:Hide()
 end
 
-/*net.Receive("pk_teamselect", function()
+net.Receive("pk_teamselect", function()
 	if IsValid(PK.menu) and PK.menu:IsVisible() then
 		GAMEMODE.ScoreboardHide(GAMEMODE)
 	else
-		GAMEMODE.ScoreboardShow(GAMEMODE, "Arenas")
-		gui.EnableScreenClicker(true)
+		GAMEMODE.ScoreboardShow(GAMEMODE, "Duel")
 	end
-end)*/
+end)
 
 hook.Add("InitPostEntity", "create menu", function()
 	if not IsValid(PK.menu) then
