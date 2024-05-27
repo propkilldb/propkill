@@ -19,6 +19,7 @@ end)
 
 event:Hook("PlayerInitialSpawn", "add them to the queue", function(ply)
 	table.insert(queue, ply)
+	ply:SetSpectating(true)
 end)
 
 event:Hook("PlayerDisconnected", "remove them from the queue", function(ply)
@@ -38,6 +39,20 @@ event:Hook("PlayerDeath", "select next duelist", function(ply1)
 
 	DespawnDuelist(ply1)
 	SpawnNextDuelist(ply2)
+end)
+
+event:Hook("PlayerSay", "commands", function(ply, text)
+	if string.lower(text) == "!leave" then
+		if not table.HasValue(queue, ply) then return end
+
+		DeleteDuelist(ply)
+		return ""
+	elseif string.lower(text) == "!join" then
+		if table.HasValue(queue, ply) then return end
+
+		table.insert(queue, ply)
+		return ""
+	end
 end)
 
 -- spawn the next duelist from the queue
@@ -67,6 +82,14 @@ function SpawnNextDuelist(opponent)
 		ply:StopSpectating(true)
 	end)
 
+	ply:PrintMessage(HUD_PRINTCENTER, "You're up!")
+	
+	for k,v in next, player.GetHumans() do
+		if v.dueling then continue end
+
+		v:PrintMessage(HUD_PRINTCENTER, queue[1]:Nick() .. " is next")
+	end
+
 	return ply
 end
 
@@ -90,7 +113,7 @@ function DeleteDuelist(ply)
 	ply.dueling = false
 	ply.opponent = nil
 
-	table.remove(queue, table.KeyFromValue(ply))
+	table.remove(queue, table.KeyFromValue(queue, ply))
 	
 	if #queue < 3 then
 		event:End()
@@ -199,7 +222,12 @@ end
 
 concommand.Add("duelmaster", function(ply, cmd, args, str)
 	if not ply:IsAdmin() then return end
-	
+
+	if (PK.currentEvent or {}).name == "duelmaster" then
+		PK.currentEvent:End()
+		return
+	end
+
 	local kills = tonumber(args[1])
 	if not isnumber(kills) then
 		kills = 8

@@ -85,7 +85,7 @@ hook.Add("KeyPress", "speccontrols", function(ply, key)
 end)
 
 function meta:SetSpectating(target, force)
-	if not force and hook.Run("PK_CanSpectate", self) == false then return end
+	if self:Team() != TEAM_SPECTATOR and not force and hook.Run("PK_CanSpectate", self) == false then return end
 	if not IsValid(target) or not target:IsPlayer() or target:Team() == TEAM_SPECTATOR then
 		target = GetNextPlayer(self)
 	end
@@ -139,6 +139,15 @@ end)
 hook.Add("CanPlayerSuicide", "no spec suicide", function(ply)
 	if ply:Team() == TEAM_SPECTATOR then
 		return false
+	end
+end)
+
+hook.Add("PlayerDeath", "auto switch spectator on death", function(ply)
+	for k,v in next, player.GetAll() do
+		if v:GetObserverTarget() == ply then
+			local nxt, prev = GetNextPlayer(v, ply)
+			v:SpectateEntity(nxt)
+		end
 	end
 end)
 

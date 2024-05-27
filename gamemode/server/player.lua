@@ -192,7 +192,7 @@ hook.Add("PlayerDeath", "streak end chat message", function(ply, inflictor, atta
 			Color(0,120,255), attacker:Nick(),
 			Color(255,255,255), " just ended ",
 			Color(0,120,255), attacker == ply and "their own " or ply:Nick() .. "'s ",
-			Color(255,255,255), tostring(ply.PKStreak), " kill streak"
+			Color(255,255,255), tostring(ply.PKStreak), " killstreak"
 		})
 	end
 end)
