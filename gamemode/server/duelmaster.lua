@@ -115,7 +115,7 @@ function DeleteDuelist(ply)
 
 	table.remove(queue, table.KeyFromValue(queue, ply))
 	
-	if #queue < 3 then
+	if #queue < 1 then
 		event:End()
 	end
 end
