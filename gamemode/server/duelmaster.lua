@@ -19,7 +19,7 @@ end)
 
 event:Hook("PlayerInitialSpawn", "add them to the queue", function(ply)
 	table.insert(queue, ply)
-	ply:SetSpectating(true)
+	ply:SetSpectating(nil, true)
 end)
 
 event:Hook("PlayerDisconnected", "remove them from the queue", function(ply)
