@@ -2,6 +2,32 @@
 CreateClientConVar("pk_grabfix", "1", true, true, "fixes prop grabbing at high velocity")
 CreateClientConVar("pk_spawnfix", "1", true, true, "changes how props spawn for more reliable grabbing")
 CreateClientConVar("pk_spawndist", "2048", true, true, "changes the maximum spawn distance of props, only updates on spawn", 0, 2048)
+CreateClientConVar("pk_spawnredundancy", "2", true, true, "the amount of redundant gm_spawn packets sent to the server in case of packet loss or delays", 0, 4)
+
+local function spawnprop(seq, args)
+	net.Start("PK_spawnprop", false) -- reliable channel
+		net.WriteUInt(seq, 16)
+		net.WriteTable(args or {})
+	net.SendToServer()
+	
+	net.Start("PK_spawnprop", true) -- unreliable channel
+		net.WriteUInt(seq, 16)
+		net.WriteTable(args or {})
+	net.SendToServer()
+end
+
+local spawncount = 0
+
+concommand.Add("gm_spawn", function(ply, cmd, args) -- overriding the servers gm_spawn
+	spawncount = spawncount + 1
+
+	spawnprop(spawncount, args)
+
+	-- just start spamming the server with propspawns in case they get delayed
+	timer.Create("redundantpropspawns", 0, ply:GetInfoNum("pk_spawnredundancy", 2), function()
+		spawnprop(spawncount, args)
+	end)
+end)
 
 if CLIENT then return end
 
@@ -222,6 +248,20 @@ function spawnfix()
 	
 	end
 	concommand.Add( "gm_spawn", CCSpawn, nil, "Spawns props/ragdolls" )
+
+	util.AddNetworkString("PK_spawnprop")
+	net.Receive("PK_spawnprop", function(_, ply)
+		local seq = net.ReadUInt(16)
+		local args = net.ReadTable()
+
+		ply.propseq = ply.propseq or 0
+		if ply.propseq - seq > 4 then ply.propseq = 0 end
+
+		if ply.propseq >= seq then return end
+		ply.propseq = seq
+
+		CCSpawn(ply, "gm_spawn", args)
+	end)
 end
 hook.Add("PostGamemodeLoaded", "spawnfix", spawnfix)
 hook.Add("OnReloaded", "spawnfix", spawnfix)
