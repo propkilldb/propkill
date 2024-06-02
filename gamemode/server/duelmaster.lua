@@ -10,6 +10,15 @@ event:Hook("PK_CanStopSpectating", "no, u cant join in", function(ply)
 	return false
 end)
 
+event:Hook("PlayerDeath", "auto switch spectator on death", function(ply)
+	for k,v in next, player.GetAll() do
+		if v:GetObserverTarget() == ply then
+			local nxt, prev = GetNextPlayer(v, ply)
+			v:SpectateEntity(nxt)
+		end
+	end
+end)
+
 event:Hook("PlayerCheckLimit", "duelmaster prop limit", function(ply, name, current, max)
 	-- TODO: PK.config.maxduelprops
 	if name == "props" and current >= 3 then
@@ -27,6 +36,8 @@ event:Hook("PlayerDisconnected", "remove them from the queue", function(ply)
 end)
 
 event:Hook("PlayerDeath", "select next duelist", function(ply1)
+	if not ply1.dueling then return end
+
 	local ply2 = ply1.opponent
 
 	ply1:SetNWInt("duelscore", 0)
@@ -43,12 +54,13 @@ end)
 
 event:Hook("PlayerSay", "commands", function(ply, text)
 	if string.lower(text) == "!leave" then
-		if not table.HasValue(queue, ply) then return end
+		print(not table.HasValue(queue, ply) and not ply.dueling, not table.HasValue(queue, ply), not ply.dueling)
+		if not table.HasValue(queue, ply) and not ply.dueling then return end
 
 		DeleteDuelist(ply)
 		return ""
 	elseif string.lower(text) == "!join" then
-		if table.HasValue(queue, ply) then return end
+		if table.HasValue(queue, ply) or ply.dueling then return end
 
 		table.insert(queue, ply)
 		return ""

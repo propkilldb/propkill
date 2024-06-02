@@ -138,7 +138,7 @@ local function RemoveLeader(ply)
 	end
 end
 
-hook.Add("PlayerJoinTeam", "resetstreak", RemoveLeader)
+hook.Add("PlayerChangedTeam", "resetstreak", RemoveLeader)
 hook.Add("PlayerDisconnected", "removeleader", RemoveLeader)
 
 function GM:PlayerDeath(ply, inflictor, attacker)

@@ -142,15 +142,6 @@ hook.Add("CanPlayerSuicide", "no spec suicide", function(ply)
 	end
 end)
 
-hook.Add("PlayerDeath", "auto switch spectator on death", function(ply)
-	for k,v in next, player.GetAll() do
-		if v:GetObserverTarget() == ply then
-			local nxt, prev = GetNextPlayer(v, ply)
-			v:SpectateEntity(nxt)
-		end
-	end
-end)
-
 function GM:PlayerCanJoinTeam(ply, teamid)
 	if ply.dueling then return false end
 
