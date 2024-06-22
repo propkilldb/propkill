@@ -265,6 +265,36 @@ PK.SetNWVarProxy("fighttimer", function(_, timeleft)
 	timelefthud:SetValue(PrettyTime(timeleft))
 end)
 
+PK.SetNWVarProxy("onesurfmode", function(_, enabled)
+	if not enabled then
+		if ispanel(onesurfhud) then
+			onesurfhud:Remove()
+			onesurfhud = nil
+		end
+
+		return
+	end
+
+	if not IsValid(onesurfhud) then
+		onesurfhud = bottomhud:Add("pk_hudelement")
+		onesurfhud:SetHeight(hudheight)
+		onesurfhud:SetFont("pk_hudfont")
+		onesurfhud:SetName("Surfs")
+		onesurfhud:SetValue(tostring(LocalPlayer():GetNW2Int("PKSurfs", 0)))
+		function onesurfhud:Layout()
+			bottomhud:Layout()
+		end
+
+		LocalPlayer():SetNW2VarProxy("PKSurfs", function(ent, name, old, new)
+			if not ispanel(onesurfhud) then return end
+			
+			onesurfhud:SetValue(tostring(new))
+		end)
+
+		return
+	end
+end)
+
 hook.Add("Think", "spechud", function()
 	local target = LocalPlayer():GetObserverTarget()
 

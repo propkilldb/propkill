@@ -16,6 +16,7 @@ include("server/duels.lua")
 include("server/duelmaster.lua")
 include("server/antilag.lua")
 include("shared/entity.lua")
+include("server/onesurf.lua")
 include("shared/networking.lua")
 
 
