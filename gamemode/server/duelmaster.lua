@@ -40,7 +40,7 @@ event:Hook("PlayerDeath", "select next duelist", function(ply1)
 
 	local ply2 = ply1.opponent
 
-	ply1:SetNWInt("duelscore", 0)
+	//ply1:SetNWInt("duelscore", 0)
 	ply2:SetNWInt("duelscore", ply2:GetNWInt("duelscore", 0) + 1)
 
 	if ply2:GetNWInt("duelscore", 0) == GetGlobalInt("kills", 8) then
@@ -77,7 +77,7 @@ function SpawnNextDuelist(opponent)
 		return
 	end
 
-	ply:SetNWInt("duelscore", 0)
+	//ply:SetNWInt("duelscore", 0)
 	ply.dueling = true
 	ply.opponent = opponent
 	opponent.opponent = ply
@@ -152,9 +152,6 @@ event:StartFunc(function(kills)
 	ply1.opponent = ply2
 	ply2.opponent = ply1
 
-	ply1:SetNWInt("duelscore", 0)
-	ply2:SetNWInt("duelscore", 0)
-
 	ply1:StopSpectating(true)
 	ply2:StopSpectating(true)
 
@@ -167,6 +164,7 @@ event:StartFunc(function(kills)
 
 	for k,v in next, player.GetAll() do
 		v:CleanUp()
+		v:SetNWInt("duelscore", 0)
 		
 		if v.dueling then continue end
 
