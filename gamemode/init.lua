@@ -16,7 +16,7 @@ include("server/duels.lua")
 include("server/duelmaster.lua")
 include("server/antilag.lua")
 include("shared/entity.lua")
-include("server/onesurf.lua")
+include("shared/onesurf.lua")
 include("shared/networking.lua")
 
 
@@ -30,6 +30,7 @@ AddCSLuaFile("client/base.lua")
 
 AddCSLuaFile("shared/entity.lua")
 AddCSLuaFile("shared/networking.lua")
+AddCSLuaFile("shared/onesurf.lua")
 
 // Scoreboard/Menu
 AddCSLuaFile("client/scoreboard/frame.lua")
