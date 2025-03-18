@@ -91,6 +91,34 @@ function GM:PlayerSpawn(ply)
 	ply:SetJumpPower(200)
 end
 
+function GM:PlayerSelectSpawn(ply)
+	if ply:Team() != TEAM_DEATHMATCH then return end
+
+	local spawns = ents.FindByClass("info_player_*")
+	local players = player.GetAll()
+	local bestspawndist = 0
+	local bestspawn = NULL
+
+	for k, spawn in next, spawns do
+		local totaldist = 0
+
+		for k, ply in next, players do
+			totaldist = totaldist + ply:GetPos():Distance2D(spawn:GetPos())
+		end
+
+		local averagedist = totaldist / #players
+
+		if averagedist > bestspawndist then
+			bestspawndist = averagedist
+			bestspawn = spawn
+		end
+	end
+
+	if IsValid(bestspawn) then
+		return bestspawn
+	end
+end
+
 function GM:DoPlayerDeath(ply, attacker, dmg)
 	if ply:Team() == TEAM_SPECTATOR then return end
 
