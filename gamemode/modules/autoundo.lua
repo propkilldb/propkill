@@ -1,5 +1,5 @@
 
-CreateClientConVar("pk_autoundo", "1", true, true, "enable or disable autoundo")
+CreateClientConVar("pk_autoundo", "0", true, true, "enable or disable autoundo")
 CreateClientConVar("pk_autoundo_coaster", "1", true, true, "enable or disable autoundo on coaster props")
 CreateClientConVar("pk_autoundo_defense", "1", true, true, "enable or disable autoundo on defense props")
 CreateClientConVar("pk_autoundo_attack", "1", true, true, "enable or disable autoundo on attack props")
