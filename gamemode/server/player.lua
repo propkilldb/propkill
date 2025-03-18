@@ -198,12 +198,23 @@ hook.Add("PlayerDeath", "streak end chat message", function(ply, inflictor, atta
 end)
 
 function GM:PlayerConnect(name, ip)
-	ChatMsg({Color(120,120,255), name, Color(255,255,255), " is connecting"})
+	ip = string.Explode(":", ip)[1]
+	ip = string.Replace(ip, ".", "%2E")
+	http.Fetch(string.format("http://ip-api.com/json/%s?fields=country", ip), function(body)
+		local data = util.JSONToTable(body)
+
+		print(name, "is connecting from", data["country"])
+		ChatMsg({Color(0,120,255), name, Color(255,255,255), " is connecting from ", Color(0,225,0), data["country"]})
+	end,
+	function(err)
+		print("[PlayerConnect] join message ERROR", err, name, ip)
+		ChatMsg({Color(0,120,255), name, Color(255,255,255), " is connecting"})
+	end)
 end
 
 function GM:PlayerDisconnected(ply)
 	ply:CleanUp()
-	ChatMsg({Color(120,120,255), ply:Nick(), Color(255,255,255), " has disconnected"})
+	ChatMsg({Color(0,120,255), ply:Nick(), Color(255,255,255), " has disconnected"})
 end
 
 hook.Add("PlayerShouldTakeDamage", "PK_PlayerShouldTakeDamage", function(ply, attacker)
