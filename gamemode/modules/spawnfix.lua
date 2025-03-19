@@ -36,7 +36,7 @@ end
 
 if CLIENT then -- override servers commands with client commands
 	concommand.Add("gm_spawn", function(ply, cmd, args)
-		redundnet.Send("gm_spawn", args)
+		redundnet.Send("spawn", args)
 	end)
 
 	local function UndoLast(ply, cmd, args)
@@ -292,7 +292,7 @@ function spawnfix()
 	end
 	concommand.Add( "gm_spawn", CCSpawn, nil, "Spawns props/ragdolls" )
 
-	redundnet.Receive("gm_spawn", function(ply, ...)
+	redundnet.Receive("spawn", function(ply, ...)
 		CCSpawn(ply, "gm_spawn", {...})
 	end)
 end
