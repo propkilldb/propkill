@@ -36,7 +36,7 @@ end
 
 if CLIENT then -- override servers commands with client commands
 	concommand.Add("gm_spawn", function(ply, cmd, args)
-		redundnet.Send(cmd, args)
+		redundnet.Send("gm_spawn", args)
 	end)
 
 	local function UndoLast(ply, cmd, args)
@@ -59,13 +59,14 @@ net.Receive("redundnet", function(len, ply)
 	local seq = net.ReadUInt(16)
 	local name = net.ReadString()
 	local data = net.ReadTable()
-	
+
 	ply.redundnetseq = ply.redundnetseq or 0
 	if ply.redundnetseq - seq > 4 then ply.redundnetseq = seq end
 
 	if seq <= ply.redundnetseq then return end
 	ply.redundnetseq = seq
 
+	if not isfunction(redundnet.callbacks[name]) then return end
 	redundnet.callbacks[name](ply, unpack(data))
 end)
 
