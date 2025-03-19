@@ -30,6 +30,12 @@ hook.Add("PreDrawSkyBox", "removeSkybox", function()
 	return true
 end)
 
+hook.Add("ChatText", "disable joinleave messages", function(pid, name, text, type)
+	if type == "joinleave" then
+		return true
+	end
+end)
+
 //disable screen wobble on landing
 hook.Add("CalcView", "CalcVyoo", function(ply, pos, ang, fov)
 	// if there is more than 1 calcview hook, we should just remove ourself, so we dont override whatever they're doing
