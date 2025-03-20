@@ -1,6 +1,5 @@
 
 local event = newEvent("lastmanstanding")
-local queue = {}
 
 event:Hook("PK_CanSpectate", "battlers cant spectate", function(ply)
 	if ply.battling then return false end
