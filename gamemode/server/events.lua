@@ -43,10 +43,10 @@ function eventmeta:Start(...)
 	if PK.currentEvent then return end
 
 	if self.onStartFunc then
-		local success = self.onStartFunc(...)
+		local success, err = self.onStartFunc(...)
 
 		if not success then
-			return
+			return success, err
 		end
 	end
 
@@ -55,6 +55,8 @@ function eventmeta:Start(...)
 	for k, v in next, self.hooks do
 		hook.Add(v.eventName, v.hookName, v.func)
 	end
+	
+	return true
 end
 
 function eventmeta:End(...)
