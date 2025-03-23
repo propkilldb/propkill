@@ -126,7 +126,10 @@ function PANEL:RefreshScoreboard()
 		players:SetSpaceY(3)
 		function players:Paint(w, h) end
 
-		for kk,vv in pairs(team.GetPlayers(k)) do
+		local sortedplayers = table.Copy(team.GetPlayers(k))
+		table.sort(sortedplayers, function(a, b) return a:Frags() > b:Frags() end)
+
+		for kk,vv in pairs(sortedplayers) do
 			local prow = players:Add("DPanel")
 			prow:SetHeight(36)
 			function prow:Paint(w, h)
