@@ -1,8 +1,9 @@
 local meta = FindMetaTable("Player")
 
-function meta:CleanUp()
+function meta:GetProps()
 	local undotable = undo.GetTable()[self:UniqueID()]
 	if not undotable then return end
+	local props = {}
 
 	for k,v in ipairs(undotable) do
 		if not v.Entities then continue end
@@ -10,8 +11,16 @@ function meta:CleanUp()
 		for l, ent in ipairs(v.Entities) do
 			if not IsValid(ent) then continue end
 
-			ent:Remove()
+			table.insert(props, ent)
 		end
+	end
+
+	return props
+end
+
+function meta:CleanUp()
+	for k, ent in ipairs(props) do
+		ent:Remove()
 	end
 end
 
