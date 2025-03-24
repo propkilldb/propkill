@@ -31,11 +31,10 @@ hook.Add("PlayerDeath", "surf counter", function(ply, inflictor, attacker)
 	if not IsValid(attacker) or not attacker:IsPlayer() then return end
 
 	attacker:SetNW2Int("PKSurfs", attacker:GetNW2Int("PKSurfs", 0) + 1)
-	print(attacker, "+1 surf")
 end)
 
 hook.Add("PlayerSpawn", "default surf count", function(ply)
-	ply:SetNW2Int("PKSurfs", 2)
+	ply:SetNW2Int("PKSurfs", 1)
 end)
 
 hook.Add("OnEntityCreated", "add collide callback", function(ent)
@@ -70,7 +69,6 @@ hook.Add("PhysgunDrop", "track grab ent", function(ply, ent)
 	ent.PKSurfProp = false
 
 	ply:SetNW2Int("PKSurfs", ply:GetNW2Int("PKSurfs", 0) - 1)
-	print(ply, "-1 surfs")
 
 	if ply:GetNW2Int("PKSurfs", 0) < 0 then
 		ruleschanged(ent)
