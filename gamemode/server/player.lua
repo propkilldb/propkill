@@ -102,31 +102,32 @@ function GM:PlayerSpawn(ply)
 end
 
 function GM:PlayerSelectSpawn(ply)
-	if ply:Team() != TEAM_DEATHMATCH then return end
-
 	local spawns = ents.FindByClass("info_player_*")
+	if ply:Team() != TEAM_DEATHMATCH then return spawns[math.random(#spawns)] end
+
 	local players = player.GetAll()
 	local bestspawndist = 0
 	local bestspawn = NULL
 
 	for k, spawn in next, spawns do
-		local totaldist = 0
+		local mindist = math.huge
 
-		for k, ply in next, players do
-			totaldist = totaldist + ply:GetPos():Distance2D(spawn:GetPos())
+		for k, v in next, players do
+			if v == ply then continue end
+			local plydist = v:GetPos():Distance2D(spawn:GetPos())
+
+			if plydist < mindist then
+				mindist = plydist
+			end
 		end
-
-		local averagedist = totaldist / #players
-
-		if averagedist > bestspawndist then
-			bestspawndist = averagedist
+		
+		if mindist > bestspawndist then
+			bestspawndist = mindist
 			bestspawn = spawn
 		end
 	end
 
-	if IsValid(bestspawn) then
-		return bestspawn
-	end
+	return IsValid(bestspawn) and bestspawn or spawns[math.random(#spawns)]
 end
 
 function GM:DoPlayerDeath(ply, attacker, dmg)
