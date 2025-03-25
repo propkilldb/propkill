@@ -12,15 +12,19 @@ include("server/entity.lua")
 include("server/base.lua")
 include("server/spectating.lua")
 include("server/events.lua")
-include("server/duels.lua")
-include("server/duelmaster.lua")
-include("server/lastmanstanding.lua")
-include("server/propgame.lua")
 include("server/antilag.lua")
 include("shared/entity.lua")
-include("shared/onesurf.lua")
 include("shared/networking.lua")
 
+// events
+include("server/duels.lua")
+include("server/duelmaster.lua")
+include("server/propgame.lua")
+include("server/lastmanstanding.lua")
+include("server/ffa.lua")
+
+// modifiers
+include("shared/onesurf.lua")
 
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
