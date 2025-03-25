@@ -117,6 +117,8 @@ function meta:SetSpectating(target, force)
 		self:ChatPrint("Press E to stop spectating, or R to switch spectator modes")
 		//self.firstSpectate = true
 	//end
+	
+	hook.Run("PK_StartedSpectating", self)
 end
 
 function meta:StopSpectating(force)
@@ -128,6 +130,8 @@ function meta:StopSpectating(force)
 	self:SetCollisionGroup(COLLISION_GROUP_PLAYER)
 	self:SetSolid(SOLID_BBOX)
 	self:Spawn()
+
+	hook.Run("PK_StoppedSpectating", self)
 end
 
 util.AddNetworkString("PK_SpectatePlayer")
