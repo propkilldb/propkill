@@ -20,6 +20,7 @@ end
 
 function meta:CleanUp()
 	local props = self:GetProps()
+	
 	for k, ent in ipairs(props) do
 		ent:Remove()
 	end
@@ -39,6 +40,11 @@ function meta:LastStand()
 			last = v.Entities[1]
 		end
 	end
+
+	timer.Simple(1, function()
+		if not IsValid(self) then return end
+		self:CleanUp()
+	end)
 end
 
 // play the kill sound for the player and anyone spectating the player
@@ -71,7 +77,6 @@ end
 
 function GM:PlayerLoadout(ply)
 	if ply:Team() != TEAM_UNASSIGNED then
-		ply:SetHealth(1)
 		ply:StripWeapons()
 		ply:Give("weapon_physgun")
 	end
@@ -214,11 +219,6 @@ function GM:PlayerDeath(ply, inflictor, attacker)
 	end
 
 	ply:LastStand()
-	
-	timer.Simple(1, function()
-		if not IsValid(ply) then return end
-		ply:CleanUp()
-	end)
 end
 
 hook.Add("PlayerDeath", "streak end chat message", function(ply, inflictor, attacker)
@@ -281,9 +281,8 @@ function GM:EntityTakeDamage(target, dmg)
 
 	if IsValid(inflictor) and IsValid(inflictor.Owner) and inflictor.Owner:IsPlayer() then		
 		dmg:SetAttacker(inflictor.Owner)
+		dmg:SetDamage(target:Health())
 	end
-
-	dmg:AddDamage(target:Health()+1)
 
 	if dmg:IsExplosionDamage() then
 		dmg:SetDamage(0)
@@ -301,6 +300,8 @@ function GM:GetFallDamage()
 end
 
 util.AddNetworkString("pk_teamselect")
+util.AddNetworkString("pk_helpmenu")
+util.AddNetworkString("pk_settingsmenu")
 
 function GM:ShowTeam(ply) net.Start("pk_teamselect") net.Send(ply) end
 function GM:ShowHelp(ply) net.Start("pk_helpmenu") net.Send(ply) end

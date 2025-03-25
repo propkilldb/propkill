@@ -46,8 +46,6 @@ function GM:InitPostEntity()
 	end
 end
 
-hook.Add("PlayerSpawnedProp", "set kill owner of props pushed into other players")
-
-hook.Add("CanProperty", "block_remover_property", function(ply, property, ent)
+hook.Add("CanProperty", "block all properties", function(ply, property, ent)
 	return ply:IsAdmin()
 end)
