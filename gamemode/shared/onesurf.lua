@@ -30,7 +30,7 @@ hook.Add("PlayerDeath", "surf counter", function(ply, inflictor, attacker)
 	attacker = inflictor.Owner
 	if not IsValid(attacker) or not attacker:IsPlayer() then return end
 
-	attacker:SetNW2Int("PKSurfs", attacker:GetNW2Int("PKSurfs", 0) + 1)
+	attacker:SetNW2Int("PKSurfs", attacker:GetNW2Int("PKSurfs", 0) + math.max(ply:GetNW2Int("PKSurfs", 0), 1))
 end)
 
 hook.Add("PlayerSpawn", "default surf count", function(ply)
