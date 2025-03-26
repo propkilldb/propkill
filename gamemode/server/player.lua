@@ -119,6 +119,8 @@ function GM:PlayerSelectSpawn(ply)
 
 		for k, v in next, players do
 			if v == ply then continue end
+			if not v:Alive() then continue end
+			
 			local plydist = v:GetPos():Distance2D(spawn:GetPos())
 
 			if plydist < mindist then
