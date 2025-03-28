@@ -39,6 +39,7 @@ function GM:InitPostEntity()
 	game.ConsoleCommand("physgun_timeToArrive 0.033\n")
 	game.ConsoleCommand("sv_sticktoground 0\n")
 	game.ConsoleCommand("sv_airaccelerate 2000\n")
+	game.ConsoleCommand("collision_shake_amp 0\n")
 
 	local tickrate = math.Round(1/engine.TickInterval(), 5)
 	if tickrate != 66.66667 then
