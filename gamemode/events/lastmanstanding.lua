@@ -1,18 +1,8 @@
 
-local event = newEvent("lastmanstanding")
-
-event:Hook("PK_CanSpectate", "battlers cant spectate", function(ply)
-	if ply.battling then return false end
-end)
-
-event:Hook("PlayerSpawn", "nice try rejoining idiot", function(ply)
-	ply.battling = false
-	ply:SetSpectating(nil, true)
-end)
-
-event:Hook("PK_CanStopSpectating", "no, u cant join in", function(ply)
-	return false
-end)
+local event = newEvent("lastmanstanding", "Last Man Standing", {
+	joinable = false,
+	minplayers = 2,
+})
 
 event:Hook("PlayerDeath", "auto switch spectator on death", function(ply)
 	for k,v in next, player.GetAll() do
@@ -30,7 +20,7 @@ event:Hook("PlayerDeath", "kick dead noob out to spectator", function(ply)
 	local playersleft = 0
 	local lastplayer = NULL
 
-	for k, ply in next, player.GetAll() do
+	for k, ply in next, event.players do
 		if ply.battling then
 			playersleft = playersleft + 1
 			lastplayer = ply
@@ -42,46 +32,27 @@ event:Hook("PlayerDeath", "kick dead noob out to spectator", function(ply)
 	end
 end)
 
-event:StartFunc(function()
-	if #player.GetAll() < 2 then
-		return false, "not enough players"
-	end
-
-	for k, ply in next, player.GetAll() do
-		ply:StopSpectating(true)
-		ply:Spawn()
+event:OnSetup(function()
+	for k, ply in next, event.players do
 		ply.battling = true
-		ply:CleanUp()
-		ply:Freeze(true)
-	
 	end
-	
-	timer.Simple(2, function()
-		for k, ply in next, player.GetAll() do
-			ply:Freeze(false)
-		end
-
-		ChatMsg({
-			//Color(255,255,255), "[",
-			Color(0,120,255), "Last Man Standing",
-			//Color(255,255,255), "]",
-			Color(255,255,255), " GO!!!",
-		})
-	end)
 
 	ChatMsg({
-		//Color(255,255,255), "[",
 		Color(0,120,255), "Last Man Standing",
-		//Color(255,255,255), "]",
 		Color(255,255,255), " event starting...",
 	})
-
-	ResetKillstreak()
 
 	return true
 end)
 
-event:EndFunc(function(winner)
+event:OnGameStart(function()
+	ChatMsg({
+		Color(0,120,255), "Last Man Standing",
+		Color(255,255,255), " GO!!!",
+	})
+end)
+
+event:OnGameEnd(function(winner)
 	if IsValid(winner) then
 		ChatMsg({
 			Color(0,120,255), winner:Nick(),
@@ -95,23 +66,18 @@ event:EndFunc(function(winner)
 			Color(255,255,255), " event ended",
 		})
 	end
+end)
 
-	timer.Simple(2, function()
-		for k,v in next, player.GetAll() do
-			v:CleanUp()
-			v:StopSpectating(true)
-			v.battling = false
-			v:Spawn()
-		end
-	
-		ResetKillstreak()
-	end)
+event:OnCleanup(function()
+	for k,v in next, player.GetAll() do
+		v.battling = false
+	end
 end)
 
 concommand.Add("lastmanstanding", function(ply, cmd, args, str)
 	if not ply:IsAdmin() then return end
 
-	if (PK.currentEvent or {}).name == "lastmanstanding" then
+	if (PK.currentEvent or {}).id == "lastmanstanding" then
 		PK.currentEvent:End()
 		return
 	end

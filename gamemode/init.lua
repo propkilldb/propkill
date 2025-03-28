@@ -17,11 +17,11 @@ include("shared/entity.lua")
 include("shared/networking.lua")
 
 // events
-include("server/duels.lua")
-include("server/duelmaster.lua")
-include("server/propgame.lua")
-include("server/lastmanstanding.lua")
-include("server/ffa.lua")
+include("events/duels.lua")
+include("events/duelmaster.lua")
+include("events/propgame.lua")
+include("events/lastmanstanding.lua")
+include("events/ffa.lua")
 
 // modifiers
 include("shared/onesurf.lua")

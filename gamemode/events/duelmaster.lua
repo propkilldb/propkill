@@ -1,10 +1,9 @@
 
-local event = newEvent("duelmaster")
+local event = newEvent("duelmaster", "Duel Master", {
+	minplayers = 3,
+	freezeplayers = false
+})
 local queue = {}
-
-event:Hook("PK_CanSpectate", "duelists cant spectate", function(ply)
-	if ply.dueling then return false end
-end)
 
 event:Hook("PK_CanStopSpectating", "no, u cant join in", function(ply)
 	return false
@@ -26,12 +25,12 @@ event:Hook("PlayerCheckLimit", "duelmaster prop limit", function(ply, name, curr
 	end
 end)
 
-event:Hook("PlayerInitialSpawn", "add them to the queue", function(ply)
+event:Hook("PlayerJoinedEvent", "add them to the queue", function(ply)
 	table.insert(queue, ply)
 	ply:SetSpectating(nil, true)
 end)
 
-event:Hook("PlayerDisconnected", "remove them from the queue", function(ply)
+event:Hook("PlayerLeftEvent", "remove them from the queue", function(ply)
 	DeleteDuelist(ply)
 end)
 
@@ -52,29 +51,17 @@ event:Hook("PlayerDeath", "select next duelist", function(ply1)
 	SpawnNextDuelist(ply2)
 end)
 
-event:Hook("PlayerSay", "commands", function(ply, text)
-	if string.lower(text) == "!leave" then
-		print(not table.HasValue(queue, ply) and not ply.dueling, not table.HasValue(queue, ply), not ply.dueling)
-		if not table.HasValue(queue, ply) and not ply.dueling then return end
-
-		DeleteDuelist(ply)
-		return ""
-	elseif string.lower(text) == "!join" then
-		if table.HasValue(queue, ply) or ply.dueling then return end
-
-		table.insert(queue, ply)
-		return ""
-	end
-end)
-
 -- spawn the next duelist from the queue
 function SpawnNextDuelist(opponent)
 	local ply = table.remove(queue, 1)
-	if not IsValid(ply) then
+	if not ply then
 		print("[DuelMaster] next duelist wasn't valid")
 		ChatMsg({Color(255,255,255), "DualMaster broke. error picking next opponent"})
 		event:End(opponent)
 		return
+	end
+	if not IsValid(ply) then
+		return SpawnNextDuelist(opponent)
 	end
 
 	//ply:SetNWInt("duelscore", 0)
@@ -96,7 +83,7 @@ function SpawnNextDuelist(opponent)
 
 	ply:PrintMessage(HUD_PRINTCENTER, "You're up!")
 	
-	for k,v in next, player.GetHumans() do
+	for k,v in next, queue do
 		if v.dueling then continue end
 
 		v:PrintMessage(HUD_PRINTCENTER, queue[1]:Nick() .. " is next")
@@ -116,30 +103,26 @@ end
 
 -- for when they're afk or disconnect
 function DeleteDuelist(ply)
-	if ply.dueling then
-		SpawnNextDuelist(ply.opponent)
-	end
-
 	ply:SetSpectating(ply.opponent, true)
-
-	ply.dueling = false
-	ply.opponent = nil
 
 	table.remove(queue, table.KeyFromValue(queue, ply))
 	
 	if #queue < 1 then
 		event:End()
 	end
+
+	if ply.dueling then
+		SpawnNextDuelist(ply.opponent)
+	end
+
+	ply.dueling = false
+	ply.opponent = nil
 end
 
-event:StartFunc(function(kills)
-	if #player.GetAll() < 3 then
-		print("not enough players")
-		return false
-	end
+event:OnSetup(function(kills)
 	kills = kills or 8
 
-	queue = table.Copy(player.GetAll())
+	queue = table.Copy(event.players)
 
 	local ply1 = table.remove(queue, 1)
 	local ply2 = table.remove(queue, 1)
@@ -162,8 +145,7 @@ event:StartFunc(function(kills)
 	SetGlobalEntity("player1", ply1)
 	SetGlobalEntity("player2", ply2)
 
-	for k,v in next, player.GetAll() do
-		v:CleanUp()
+	for k,v in next, event.players do
 		v:SetNWInt("duelscore", 0)
 		
 		if v.dueling then continue end
@@ -173,14 +155,6 @@ event:StartFunc(function(kills)
 	
 	ply1:Freeze(true)
 	ply2:Freeze(true)
-
-	timer.Simple(2, function()
-		-- dont need to end the fight here if they arent valid, cos the duel hooks are already created
-		if not IsValid(ply1) or not IsValid(ply2) then return end
-
-		ply1:Freeze(false)
-		ply2:Freeze(false)
-	end)
 
 	ChatMsg({
 		Color(255,255,255), "Starting ",
@@ -195,7 +169,15 @@ event:StartFunc(function(kills)
 	return true
 end)
 
-event:EndFunc(function(winner)
+event:OnGameStart(function()
+	for k, ply in next, event.players do
+		if ply.dueling then
+			ply:Freeze(false)
+		end
+	end
+end)
+
+event:OnGameEnd(function(winner)
 	if IsValid(winner) then
 		ChatMsg({
 			Color(0,120,255), winner:Nick(),
@@ -210,30 +192,23 @@ event:EndFunc(function(winner)
 		})
 	end
 
-	timer.Simple(2, function()
-		CleanupDuelmaster()
-	end)
+
 end)
 
-function CleanupDuelmaster()
+event:OnCleanup(function()
 	SetGlobalEntity("player1", NULL)
 	SetGlobalEntity("player2", NULL)
 
-	for k,v in next, player.GetAll() do
-		v:CleanUp()
-		v:StopSpectating(true)
-		v.dueling = false
-		v.opponent = nil
-		v:Spawn()
+	for k, ply in next, event.players do
+		ply.dueling = false
+		ply.opponent = nil
 	end
-
-	ResetKillstreak()
-end
+end)
 
 concommand.Add("duelmaster", function(ply, cmd, args, str)
 	if not ply:IsAdmin() then return end
 
-	if (PK.currentEvent or {}).name == "duelmaster" then
+	if (PK.currentEvent or {}).id == "duelmaster" then
 		PK.currentEvent:End()
 		return
 	end

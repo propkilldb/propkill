@@ -1,5 +1,7 @@
 
-local event = newEvent("propgame")
+local event = newEvent("propgame", "PropGame", {
+	minplayers = 2,
+})
 local proplists = {
 	{
 		"models/props_canal/canal_bars004.mdl",
@@ -61,15 +63,6 @@ local proplists = {
 	}
 }
 
-event:Hook("PlayerChangedTeam", "let people not play", function(ply, oldteam, newteam)
-	if newteam == TEAM_DEATHMATCH then
-		ply.battling = true
-		ply.level = 1
-	else
-		ply.battling = false
-	end
-end)
-
 event:Hook("PlayerDeath", "who killed who", function(ply, inflictor, attacker)
 	if not IsValid(attacker) or not attacker:IsPlayer() then return end
 	attacker.level = attacker.level or 1
@@ -114,27 +107,11 @@ event:Hook("PlayerDeath", "who killed who", function(ply, inflictor, attacker)
 	end
 end)
 
-event:Hook("PlayerInitialSpawn", "add late joiners to the battle", function(ply)
-	ply.battling = true
+event:Hook("PlayerJoinedEvent", "add late joiners to the battle", function(ply)
 	ply.level = 1
 end)
 
-event:StartFunc(function(proplist)
-	if #player.GetAll() < 2 then
-		return false, "not enough players"
-	end
-
-	for k, ply in next, player.GetAll() do
-		if ply:Team() != TEAM_DEATHMATCH then continue end
-		ply:Spawn()
-		ply.battling = true
-		ply.level = 1
-		ply:CleanUp()
-		ply:Freeze(true)
-		ply:SetFrags(0)
-		ply:SetDeaths(0)
-	end
-
+event:OnSetup(function(proplist)
 	event.proplist = proplist
 
 	-- kinda hacky, but it works i guess
@@ -144,28 +121,22 @@ event:StartFunc(function(proplist)
 		return event.CCSpawn(ply, cmd, args, str)
 	end
 	
-	timer.Simple(2, function()
-		for k, ply in next, player.GetAll() do
-			ply:Freeze(false)
-		end
-
-		ChatMsg({
-			Color(0,120,255), "PropGame",
-			Color(255,255,255), " STARTED!",
-		})
-	end)
-
 	ChatMsg({
 		Color(0,120,255), "PropGame",
 		Color(255,255,255), " event starting with " .. tostring(#event.proplist) .. " levels",
 	})
 
-	ResetKillstreak()
-
 	return true
 end)
 
-event:EndFunc(function(winner)
+event:OnGameStart(function()
+	ChatMsg({
+		Color(0,120,255), "PropGame",
+		Color(255,255,255), " STARTED!",
+	})
+end)
+
+event:OnGameEnd(function(winner)
 	if IsValid(winner) then
 		ChatMsg({
 			Color(0,120,255), winner:Nick(),
@@ -181,23 +152,12 @@ event:EndFunc(function(winner)
 	end
 
 	CCSpawn = event.CCSpawn
-
-	timer.Simple(2, function()
-		for k,v in next, player.GetAll() do
-			if v:Team() != TEAM_DEATHMATCH then continue end
-			v:CleanUp()
-			v.battling = false
-			v:Spawn()
-		end
-	
-		ResetKillstreak()
-	end)
 end)
 
 concommand.Add("propgame", function(ply, cmd, args, str)
 	if not ply:IsAdmin() then return end
 
-	if (PK.currentEvent or {}).name == "propgame" then
+	if (PK.currentEvent or {}).id == "propgame" then
 		PK.currentEvent:End()
 		return
 	end

@@ -1,16 +1,10 @@
 
-PK.duels = PK.duels or {}
-PK.duels.fighting = PK.duels.fighting or false
-
-local event = newEvent("duel")
-
-event:Hook("PK_CanSpectate", "duelists cant spectate", function(ply)
-	if ply.dueling then return false end
-end)
-
-event:Hook("PK_CanStopSpectating", "no, u cant join in", function(ply)
-	return false
-end)
+local event = newEvent("duel", "1v1", {
+	joinable = false,
+	minplayers = 2,
+	startfreezetime = 3,
+	endfreezetime = 3,
+})
 
 event:Hook("PlayerCheckLimit", "duel prop limit", function(ply, name, current, max)
 	-- TODO: PK.config.maxduelprops
@@ -25,18 +19,6 @@ event:Hook("PlayerDeath", "PK_duel_ForceSpawn", function(ply)
 			ply:Spawn()
 		end
 	end)
-end)
-
-event:Hook("PlayerSpawn", "PK_duel_ForceSpectate", function(ply)
-	if not ply.dueling then
-		ply:SetSpectating(nil, true)
-	end
-end)
-
-event:Hook("PlayerDisconnected", "PK_duel_AutoEnd", function(ply)
-	if ply.dueling then
-		event:End(ply)
-	end
 end)
 
 event:Hook("PlayerDeath", "PK_duel_KillCounter", function(ply, inflictor, attacker)
@@ -81,7 +63,7 @@ net.Receive("pk_duelaccept", function(_, fightee)
 end)
 
 function InvitePlayerToDuel(fighter, fightee, kills, time, ranked)
-	if PK.duels.fighting then return end
+	if PK.currentEvent then return end
 	if not IsValid(fightee) or not fightee:IsPlayer() then return end
 	if not IsValid(fighter) or not fighter:IsPlayer() then return end
 	if fighter == fightee then return end
@@ -112,7 +94,7 @@ function InvitePlayerToDuel(fighter, fightee, kills, time, ranked)
 end
 
 function AcceptDuel(fighter, fightee)
-	if PK.duels.fighting then return end
+	if PK.currentEvent then return end
 	if not IsValid(fightee) or not fightee:IsPlayer() then return end
 	if not IsValid(fighter) or not fighter:IsPlayer() then return end
 
@@ -142,36 +124,19 @@ function DeclineDuel(fighter, fightee)
 	print("fight declined")
 end
 
-event:StartFunc(function(ply1, ply2, kills, time, ranked)
-	if PK.duels.fighting then return false end
-	if not IsValid(ply1) or not IsValid(ply2) then return false end
-	if ply1 == ply2 then return false end
-
-	PK.duels.fighting = true
+event:OnSetup(function(ply1, ply2, kills, time, ranked)
+	if not IsValid(ply1) or not IsValid(ply2) then return false, "invalid player" end
+	if ply1 == ply2 then return false, "you can't duel yourself" end
 
 	kills = kills or 15
 	time = time or 10
 	ranked = ranked or false
 
-	ply1.dueling = true
-	ply2.dueling = true
+	event.players = { ply1, ply2 }
+	event.time = time
 
 	ply1.opponent = ply2
 	ply2.opponent = ply1
-
-	ply1:StopSpectating(true)
-	ply2:StopSpectating(true)
-
-	ResetKillstreak()
-
-	-- TODO: store their original spectate state?
-	for k,v in next, player.GetAll() do
-		v:CleanUp()
-		
-		if v.dueling then continue end
-
-		v:SetSpectating(table.Random({ply1, ply2}), true)
-	end
 
 	SetGlobalInt("kills", kills)
 	SetGlobalEntity("player1", ply1)
@@ -180,26 +145,6 @@ event:StartFunc(function(ply1, ply2, kills, time, ranked)
 
 	ply1:SetNWInt("duelscore", 0)
 	ply2:SetNWInt("duelscore", 0)
-
-	ply1:Spawn()
-	ply2:Spawn()
-
-	ply1:Freeze(true)
-	ply2:Freeze(true)
-
-	timer.Simple(2, function()
-		-- dont need to end the fight here if they arent valid, cos the duel hooks are already created
-		if not IsValid(ply1) or not IsValid(ply2) then return end
-
-		timer.Create("fighttimer", time*60, 1, function()
-			event:End()
-		end)
-
-		PK.SetNWVar("fighttimer", timer.TimeLeft("fighttimer"))
-
-		ply1:Freeze(false)
-		ply2:Freeze(false)
-	end)
 
 	ChatMsg({
 		Color(0,120,255), ply1:Nick(),
@@ -211,9 +156,16 @@ event:StartFunc(function(ply1, ply2, kills, time, ranked)
 	return true
 end)
 
-event:EndFunc(function(forfeitply)
+event:OnGameStart(function()
+	timer.Create("fighttimer", event.time*60, 1, function()
+		event:End()
+	end)
+
+	PK.SetNWVar("fighttimer", timer.TimeLeft("fighttimer"))
+end)
+
+event:OnGameEnd(function(forfeitply)
 	timer.Remove("fighttimer")
-	timer.Simple(3, ActuallyEndTheFight)
 
 	local ply1 = GetGlobalEntity("player1")
 	local ply2 = GetGlobalEntity("player2")
@@ -259,17 +211,7 @@ event:EndFunc(function(forfeitply)
 	ChatMsg(message)
 end)
 
-function ActuallyEndTheFight()
-	PK.duels.fighting = false
-
+event:OnCleanup(function()
 	SetGlobalEntity("player1", NULL)
 	SetGlobalEntity("player2", NULL)
-
-	for k,v in next, player.GetAll() do
-		v:CleanUp()
-		v:StopSpectating(true)
-		v.dueling = false
-	end
-
-	ResetKillstreak()
-end
+end)

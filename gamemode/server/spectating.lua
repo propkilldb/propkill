@@ -79,10 +79,20 @@ hook.Add("KeyPress", "speccontrols", function(ply, key)
 				ply:Spectate(OBS_MODE_ROAMING)
 			end
 		elseif key == IN_USE then
-			ply:StopSpectating()
+			ply:RequestStopSpectating()
 		end
 	end
 end)
+
+function meta:RequestStartSpectating(target)
+	hook.Run("PlayerRequestStartSpectating", self)
+	return self:SetSpectating(target)
+end
+
+function meta:RequestStopSpectating(target)
+	hook.Run("PlayerRequestStopSpectating", self)
+	return self:StopSpectating(target)
+end
 
 function meta:SetSpectating(target, force)
 	if self:Team() != TEAM_SPECTATOR and not force and hook.Run("PK_CanSpectate", self) == false then return end
@@ -117,8 +127,8 @@ function meta:SetSpectating(target, force)
 		self:ChatPrint("Press E to stop spectating, or R to switch spectator modes")
 		//self.firstSpectate = true
 	//end
-	
-	hook.Run("PK_StartedSpectating", self)
+
+	hook.Run("PK_StartedSpectating", self, force)
 end
 
 function meta:StopSpectating(force)
@@ -131,13 +141,13 @@ function meta:StopSpectating(force)
 	self:SetSolid(SOLID_BBOX)
 	self:Spawn()
 
-	hook.Run("PK_StoppedSpectating", self)
+	hook.Run("PK_StoppedSpectating", self, force)
 end
 
 util.AddNetworkString("PK_SpectatePlayer")
 net.Receive("PK_SpectatePlayer", function(len, ply)
 	local target = net.ReadEntity()
-	ply:SetSpectating(target)
+	ply:RequestStartSpectating(target)
 end)
 
 hook.Add("CanPlayerSuicide", "no spec suicide", function(ply)
@@ -147,7 +157,5 @@ hook.Add("CanPlayerSuicide", "no spec suicide", function(ply)
 end)
 
 function GM:PlayerCanJoinTeam(ply, teamid)
-	if ply.dueling then return false end
-
-	return true
+	return false
 end
