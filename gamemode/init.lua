@@ -24,7 +24,8 @@ include("events/lastmanstanding.lua")
 include("events/ffa.lua")
 
 // modifiers
-include("shared/onesurf.lua")
+include("modifiers/onesurf.lua")
+AddCSLuaFile("modifiers/onesurf.lua")
 
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
@@ -36,7 +37,6 @@ AddCSLuaFile("client/base.lua")
 
 AddCSLuaFile("shared/entity.lua")
 AddCSLuaFile("shared/networking.lua")
-AddCSLuaFile("shared/onesurf.lua")
 
 // Scoreboard/Menu
 AddCSLuaFile("client/scoreboard/frame.lua")
