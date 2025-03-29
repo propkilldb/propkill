@@ -15,8 +15,4 @@ concommand.Add("noscroll", function(ply, cmd, args, str)
 		Color(255,255,255), " mode ",
 		Color(255,255,255), (PK.GetNWVar("noscrollmode", false) and "enabled" or "disabled"),
 	})
-
-	for k,v in next, player.GetAll() do 
-		v:SetNW2Int("PKSurfs", 1)
-	end
 end)
