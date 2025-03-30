@@ -27,6 +27,7 @@ include("events/ffa.lua")
 include("modifiers/onesurf.lua")
 AddCSLuaFile("modifiers/onesurf.lua")
 include("modifiers/noscroll.lua")
+include("modifiers/invertedscroll.lua")
 
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
