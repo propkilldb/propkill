@@ -196,6 +196,8 @@ function pk_flagesp()
 end
 hook.Add("HUDPaint", "pk_flagesp", pk_flagesp)
 
+local jump = false
+
 local function msrotate()
 	local ply = LocalPlayer()
 	local a = ply:EyeAngles()
@@ -206,10 +208,16 @@ concommand.Add("ms_rotate", msrotate)
 local function msrotate2()
 	local ply = LocalPlayer()
 	local a = ply:EyeAngles() ply:SetEyeAngles(Angle(a.p-a.p-a.p, a.y-180, a.r))
-	RunConsoleCommand("+jump")
-	timer.Simple(0.2, function() ply:ConCommand("-jump") end)
+	jump = true
 end
 concommand.Add("ms_rotate2", msrotate2)
+
+hook.Add("CreateMove", "rotatejumpfix", function(cmd)
+	if jump and cmd:CommandNumber() != 0 then
+		jump = false
+		cmd:AddKey(IN_JUMP)
+	end
+end)
 
 local function vertBeam()
 	if !pk_ms_settings_table.VertBeam then
