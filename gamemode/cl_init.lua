@@ -12,3 +12,6 @@ include("client/scoreboard/frame.lua")
 
 // modifiers
 include("modifiers/onesurf.lua")
+
+// modules
+include("modules/bindmenu.lua")

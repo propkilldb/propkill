@@ -41,6 +41,9 @@ AddCSLuaFile("client/base.lua")
 AddCSLuaFile("shared/entity.lua")
 AddCSLuaFile("shared/networking.lua")
 
+// modules
+AddCSLuaFile("modules/bindmenu.lua")
+
 // Scoreboard/Menu
 AddCSLuaFile("client/scoreboard/frame.lua")
 AddCSLuaFile("client/scoreboard/scoreboard.lua")
