@@ -34,6 +34,10 @@ local defaults = {
         bindtype = "prop",
         value = "models/XQM/CoasterTrack/slope_225_3.mdl"
     },
+    [KEY_T] = {
+        bindtype = "command",
+        value = "+voicerecord"
+    },
 }
 
 local bindmeta = {}
@@ -44,7 +48,7 @@ function bindmeta:addBind(key, bindtype, value)
         return false, "Key already in use"
     end
 
-    if bindtype == "command" and IsConCommandBlocked(value) then
+    if bindtype == "command" and IsConCommandBlocked(value) and not string.lower(value) == "+voicerecord" then
         return false, "Console command is blocked"
     end
 
@@ -52,10 +56,6 @@ function bindmeta:addBind(key, bindtype, value)
         bindtype = bindtype,
         value = value
     }
-
-    if string.lower(value) == "+voicerecord" and not permissions.IsGranted("voicerecord") then
-        permissions.EnableVoiceChat(true)
-    end
 end
 
 function bindmeta:AddCommandBind(key, command)
@@ -95,7 +95,9 @@ function bindmeta:Run(key, pressed)
 
     if bindtype == "command" then
         if value then
-            if value:sub(1, 1) == "+" then
+			if string.lower(value) == "+voicerecord" then
+				permissions.EnableVoiceChat(pressed)
+            elseif value:sub(1, 1) == "+" then
                 if pressed then
                     LocalPlayer():ConCommand(value)
                 else
@@ -159,7 +161,7 @@ end
 
 function bindmenu()
     bindmenu = vgui.Create("DFrame")
-    bindmenu:SetSize(700, 300)
+    bindmenu:SetSize(700, 325)
     bindmenu:Center()
     bindmenu:MakePopup()
     bindmenu:SetTitle("Bind Menu")
@@ -550,7 +552,7 @@ function EditBind(type, key, callback)
             elseif type == "command" then
                 self:SetTooltip("Please enter a command to run")
             end
-        elseif binds:IsBound(self.selectedKey) then
+        elseif self.selectedKey != key and binds:IsBound(self.selectedKey) then
             self:SetTooltip("That key is already in use by another bind")
         else
             self:SetEnabled(true)
@@ -598,6 +600,7 @@ function EditBind(type, key, callback)
             end)
         end
         propselect:SetModel(binds:GetValue(key) or nil)
+        accept:SetValue(binds:GetValue(key) or nil)
     elseif type == "command" then
         local command = vgui.Create("DTextEntry", bindinfo)
         command:DockMargin(0,2,0,2)
