@@ -18,7 +18,7 @@ hook.Add("PlayerSpawnProp", "pk_canspawnprop", function(ply, model)
 		return false
 	end
 
-	if ply:Team() == TEAM_SPECTATOR then
+	if ply:IsSpectating() then
 		return false
 	end
 end)

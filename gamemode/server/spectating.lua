@@ -5,7 +5,7 @@ local function GetValidPlayers(tbl)
 	local ret = {}
 	
 	for k,v in pairs(tbl) do
-		if v:Alive() and v:Team() != TEAM_SPECTATOR then
+		if v:Alive() and not v:IsSpectating() then
 			table.insert(ret, v)
 		end
 	end
@@ -95,8 +95,8 @@ function meta:RequestStopSpectating(target)
 end
 
 function meta:SetSpectating(target, force)
-	if self:Team() != TEAM_SPECTATOR and not force and hook.Run("PK_CanSpectate", self) == false then return end
-	if not IsValid(target) or not target:IsPlayer() or target:Team() == TEAM_SPECTATOR then
+	if not self:IsSpectating() and not force and hook.Run("PK_CanSpectate", self) == false then return end
+	if not IsValid(target) or not target:IsPlayer() or target:IsSpectating() then
 		target = GetNextPlayer(self)
 	end
 
@@ -144,6 +144,10 @@ function meta:StopSpectating(force)
 	hook.Run("PK_StoppedSpectating", self, force)
 end
 
+function meta:IsSpectating()
+	return self:Team() == TEAM_SPECTATOR
+end
+
 util.AddNetworkString("PK_SpectatePlayer")
 net.Receive("PK_SpectatePlayer", function(len, ply)
 	local target = net.ReadEntity()
@@ -151,7 +155,7 @@ net.Receive("PK_SpectatePlayer", function(len, ply)
 end)
 
 hook.Add("CanPlayerSuicide", "no spec suicide", function(ply)
-	if ply:Team() == TEAM_SPECTATOR then
+	if ply:IsSpectating() then
 		return false
 	end
 end)

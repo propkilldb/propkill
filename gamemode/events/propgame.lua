@@ -120,6 +120,10 @@ event:OnSetup(function(proplist)
 		args[1] = event.proplist[ply.level or 1] or ""
 		return event.CCSpawn(ply, cmd, args, str)
 	end
+
+	for k,v in next, event.players do
+		v.level = 1
+	end
 	
 	ChatMsg({
 		Color(0,120,255), "PropGame",

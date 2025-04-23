@@ -314,32 +314,26 @@ end
 function antilag.group:CheckLag()
 	if not antilag.IsLagging() then return end
 	local complexityScore = self:Complexity() / (self:Count() * 0.05)
-	//500
+	
 	if self:Count() > 1 and complexityScore > 400 and self:Penetrating() > 1 then
 		self:Debug("high complexity low count", "score:", complexityScore)
 		self:FreezeAll()
 		return
 	end
-	//8 8
-	if self:Count() > 6 and complexityScore > 100 and self:Penetrating() > 6 then
+
+	if self:Count() > 2 and complexityScore > 100 and self:Penetrating() > 2 then
 		self:Debug("med complexity med count", "score:", complexityScore)
 		self:FreezeAll()
 		return
 	end
-	// 30
-	if complexityScore > 30 and self:Penetrating() > 15 then
+
+	if complexityScore > 30 and self:Penetrating() > 5 then
 		self:Debug("low complexity high penetrating", "score:", complexityScore)
 		self:FreezeAll()
 		return
 	end
-	
-	if complexityScore > 30 and self:Penetrating() > 10 and self:Count() > 100 then
-		self:Debug("low complexity med penetrating high count", "score:", complexityScore)
-		self:FreezeAll()
-		return
-	end
 
-	if self:Colliding() > 25 then
+	if self:Colliding() > 5 then
 		self:Debug("high collding", "score:", complexityScore)
 		self:FreezeAll()
 		return
@@ -534,7 +528,7 @@ hook.Add("PlayerSpawnProp", "propspam warning", function(ply, prop)
 		return false
 	end
 
-	if ply.spamSpawnCount > 3 and ply.spamLastTick == engine.TickCount() then
+	if ply.spamSpawnCount > 2 and ply.spamLastTick == engine.TickCount() then
 		spamWarn(ply)
 		ply.lastSpam = CurTime()
 		return false

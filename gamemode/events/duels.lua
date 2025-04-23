@@ -146,6 +146,9 @@ event:OnSetup(function(ply1, ply2, kills, time, ranked)
 	ply1:SetNWInt("duelscore", 0)
 	ply2:SetNWInt("duelscore", 0)
 
+	ply1:StopSpectating(true)
+	ply2:StopSpectating(true)
+
 	ChatMsg({
 		Color(0,120,255), ply1:Nick(),
 		Color(255,255,255), " started a duel against ",

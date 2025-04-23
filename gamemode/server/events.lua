@@ -64,7 +64,7 @@ function eventmeta:Start(...)
 	self.players = {}
 
 	for _, ply in next, player.GetAll() do
-		if ply:Team() == TEAM_SPECTATOR then
+		if ply:IsSpectating() then
 			ply.wasSpectating = true
 		else
 			table.insert(self.players, ply)
@@ -145,7 +145,7 @@ function eventmeta:End(...)
 				ply:StopSpectating(true)
 			end
 
-			if ply:Team() != TEAM_SPECTATOR then
+			if not ply:IsSpectating() then
 				ply:CleanUp()
 				ply:Spawn()
 			end

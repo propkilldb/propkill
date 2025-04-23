@@ -123,6 +123,16 @@ function bindmeta:Save()
 end
 
 binds = util.JSONToTable(filedata or "") or defaults
+setmetatable(binds, bindmeta)
+
+hook.Add("PlayerBindPress", "custombinds", function(ply, bind, pressed, code)
+    if not bindmenu_enable:GetBool() then return end
+
+    if binds:IsBound(code) then
+        binds:Run(code, pressed)
+        return true
+    end
+end)
 
 cvars.AddChangeCallback("bindmenu_enable", function(name, old, new)
     if new == "0" then return end
@@ -133,17 +143,6 @@ cvars.AddChangeCallback("bindmenu_enable", function(name, old, new)
             permissions.EnableVoiceChat(true)
             return
         end
-    end
-end)
-
-setmetatable(binds, bindmeta)
-
-hook.Add("PlayerBindPress", "custombinds", function(ply, bind, pressed, code)
-    if not bindmenu_enable:GetBool() then return end
-
-    if binds:IsBound(code) then
-        binds:Run(code, pressed)
-        return true
     end
 end)
 

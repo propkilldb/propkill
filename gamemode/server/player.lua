@@ -86,7 +86,7 @@ function GM:PlayerLoadout(ply)
 end
 
 function GM:PlayerSpawn(ply)
-	if ply:Team() == TEAM_SPECTATOR then
+	if ply:IsSpectating() then
 		GAMEMODE:PlayerSpawnAsSpectator(ply)
 		return
 	end
@@ -108,37 +108,48 @@ end
 
 function GM:PlayerSelectSpawn(ply)
 	local spawns = ents.FindByClass("info_player_*")
-	if ply:Team() != TEAM_DEATHMATCH then return spawns[math.random(#spawns)] end
+	if ply:Team() != TEAM_DEATHMATCH then
+		return spawns[math.random(#spawns)]
+	end
 
 	local players = player.GetAll()
-	local bestspawndist = 0
-	local bestspawn = NULL
+	local spawnDists = {}
 
-	for k, spawn in next, spawns do
+	for _, spawn in ipairs(spawns) do
 		local mindist = math.huge
 
-		for k, v in next, players do
+		for _, v in ipairs(players) do
 			if v == ply then continue end
 			if not v:Alive() then continue end
-			
-			local plydist = v:GetPos():Distance2D(spawn:GetPos())
+			if v:Team() != TEAM_DEATHMATCH then continue end
 
+			local plydist = v:GetPos():Distance2D(spawn:GetPos())
 			if plydist < mindist then
 				mindist = plydist
 			end
 		end
-		
-		if mindist > bestspawndist then
-			bestspawndist = mindist
-			bestspawn = spawn
-		end
+
+		table.insert(spawnDists, {spawn = spawn, dist = mindist})
 	end
 
-	return IsValid(bestspawn) and bestspawn or spawns[math.random(#spawns)]
+	table.sort(spawnDists, function(a, b)
+		return a.dist > b.dist
+	end)
+
+	local topChoices = {}
+	for i = 1, math.min(3, #spawnDists) do
+		table.insert(topChoices, spawnDists[i].spawn)
+	end
+
+	if #topChoices > 0 then
+		return topChoices[math.random(#topChoices)]
+	end
+
+	return spawns[math.random(#spawns)]
 end
 
 function GM:DoPlayerDeath(ply, attacker, dmg)
-	if ply:Team() == TEAM_SPECTATOR then return end
+	if ply:IsSpectating() then return end
 
 	ply:CreateRagdoll()
 	ply:AddDeaths(1)

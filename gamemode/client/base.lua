@@ -1,5 +1,8 @@
 local spectateFOV = CreateClientConVar("spectate_fov", 100, true, false, "Sets your FOV while spectating another player", 10, 170)
 
+// lower their interpolation to 16ms, 100ms is too high for propkill
+RunConsoleCommand("cl_interp", 0.016)
+
 net.Receive("pk_chatmsg", function(len) 
 	chat.AddText(unpack(net.ReadTable()))
 end)
@@ -20,7 +23,7 @@ hook.Add("OnPlayerChat", "chattick", function()
 	chat.PlaySound()
 end)
 
-hook.Add("PostDraw2DSkyBox", "removeSkybox", function()
+/*hook.Add("PostDraw2DSkyBox", "removeSkybox", function()
 	render.Clear(50, 50, 50, 255)
 	return true
 end)
@@ -28,7 +31,7 @@ end)
 hook.Add("PreDrawSkyBox", "removeSkybox", function()
 	render.Clear(50, 50, 50, 255)
 	return true
-end)
+end)*/
 
 hook.Add("ChatText", "disable joinleave messages", function(pid, name, text, type)
 	if type == "joinleave" then
