@@ -56,6 +56,22 @@ function meta:PlayKillSound()
 	end
 end
 
+// better freeze function that isnt buggy like ply:Lock() and actually stops them from moving unlike ply:Freeze()
+function meta:PKFreeze(state)
+	if state then
+		self.PKFrozen = true
+		self.PKOldMoveState = self:GetMoveType()
+		self:AddFlags(FL_FROZEN)
+		self:AddFlags(FL_GODMODE)
+		self:SetMoveType(MOVETYPE_NONE)
+	elseif not state then
+		self.PKFrozen = false
+		self:RemoveFlags(FL_FROZEN)
+		self:RemoveFlags(FL_GODMODE)
+		self:SetMoveType(self.PKOldMoveState or MOVETYPE_WALK)
+	end
+end
+
 function GM:PlayerInitialSpawn(ply)
 	ply:SetTeam(TEAM_DEATHMATCH)
 	ply:Spawn()
@@ -100,10 +116,17 @@ function GM:PlayerSpawn(ply)
 
 	ply:SetCustomCollisionCheck(true)
 
+	// set the players material to something more grippy to improve boosting
+	ply:GetPhysicsObject():SetMaterial("phx_rubbertire2")
+
 	ply.PKStreak = 0
 	ply:SetWalkSpeed(400)
 	ply:SetRunSpeed(400)
 	ply:SetJumpPower(200)
+
+	if ply.PKFrozen then
+		ply:PKFreeze(true)
+	end
 end
 
 function GM:PlayerSelectSpawn(ply)
@@ -268,6 +291,19 @@ function GM:PlayerDisconnected(ply)
 	ply:CleanUp()
 	ChatMsg({Color(0,120,255), ply:Nick(), Color(255,255,255), " has disconnected"})
 end
+
+timer.Create("pk_anti-wallstuck", 1, 0, function()
+	for k, ply in ipairs(player.GetAll()) do
+		if not IsValid(ply) then continue end
+		if ply:IsSpectating() then continue end
+		if not ply:Alive() then continue end
+		if ply:GetMoveType() != MOVETYPE_WALK then continue end
+
+		if not util.IsInWorld(ply:EyePos()) then
+			ply:TakeDamage(10, ply, game.GetWorld())
+		end
+	end
+end)
 
 hook.Add("PlayerShouldTakeDamage", "PK_PlayerShouldTakeDamage", function(ply, attacker)
 	if ply:Team() == TEAM_UNASSIGNED then

@@ -58,6 +58,10 @@ function GetNextPlayer(spectator, spectating)
 	return choice, prev
 end
 
+function GM:PlayerSpawnAsSpectator(ply)
+	ply:SetSpectating(nil, true)
+end
+
 hook.Add("KeyPress", "speccontrols", function(ply, key)
 	if ply:GetObserverMode() != OBS_MODE_NONE then
 		local next, prev = GetNextPlayer(ply, ply:GetObserverTarget())
@@ -111,7 +115,6 @@ function meta:SetSpectating(target, force)
 	self:SetCollisionGroup(COLLISION_GROUP_NONE)
 	self:SetSolid(SOLID_NONE)
 	self:StripWeapons()
-	GAMEMODE:PlayerSpawnAsSpectator(self)
 	self:Spectate(OBS_MODE_IN_EYE)
 
 	if not IsValid(target) then
@@ -124,7 +127,7 @@ function meta:SetSpectating(target, force)
 	self:SetNWString("arena", target:GetNWString("arena", "0"))
 
 	//if not self.firstSpectate then
-		self:ChatPrint("Press E to stop spectating, or R to switch spectator modes")
+		self:ChatPrint("Press Use to stop spectating, or Reload to switch spectator modes")
 		//self.firstSpectate = true
 	//end
 
@@ -157,6 +160,17 @@ end)
 hook.Add("CanPlayerSuicide", "no spec suicide", function(ply)
 	if ply:IsSpectating() then
 		return false
+	end
+end)
+
+hook.Add("PlayerChangedTeam", "auto switch spectators", function(ply, oldteam, newteam)
+	if newteam != TEAM_SPECTATOR then return end
+	
+	for k, v in next, team.GetPlayers(TEAM_SPECTATOR) do
+		if v:GetObserverTarget() == ply then
+			local nxt, prev = GetNextPlayer(v, ply)
+			v:SpectateEntity(nxt)
+		end
 	end
 end)
 

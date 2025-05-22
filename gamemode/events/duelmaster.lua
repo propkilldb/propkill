@@ -9,18 +9,9 @@ event:Hook("PK_CanStopSpectating", "no, u cant join in", function(ply)
 	return false
 end)
 
-event:Hook("PlayerDeath", "auto switch spectator on death", function(ply)
-	for k,v in next, player.GetAll() do
-		if v:GetObserverTarget() == ply then
-			local nxt, prev = GetNextPlayer(v, ply)
-			v:SpectateEntity(nxt)
-		end
-	end
-end)
-
 event:Hook("PlayerCheckLimit", "duelmaster prop limit", function(ply, name, current, max)
 	-- TODO: PK.config.maxduelprops
-	if name == "props" and current >= 3 then
+	if name == "props" and current >= 4 then
 		return false
 	end
 end)
@@ -47,8 +38,10 @@ event:Hook("PlayerDeath", "select next duelist", function(ply1)
 		return
 	end
 
-	DespawnDuelist(ply1)
-	SpawnNextDuelist(ply2)
+	timer.Simple(1, function()
+		DespawnDuelist(ply1)
+		SpawnNextDuelist(ply2)
+	end)
 end)
 
 -- spawn the next duelist from the queue
@@ -153,8 +146,8 @@ event:OnSetup(function(kills)
 		v:SetSpectating(table.Random({ply1, ply2}), true)
 	end
 	
-	ply1:Freeze(true)
-	ply2:Freeze(true)
+	ply1:PKFreeze(true)
+	ply2:PKFreeze(true)
 
 	ChatMsg({
 		Color(255,255,255), "Starting ",
@@ -172,7 +165,7 @@ end)
 event:OnGameStart(function()
 	for k, ply in next, event.players do
 		if ply.dueling then
-			ply:Freeze(false)
+			ply:PKFreeze(false)
 		end
 	end
 end)

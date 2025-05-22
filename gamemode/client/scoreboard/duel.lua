@@ -64,10 +64,10 @@ function PANEL:Init()
 
 	end
 
-	self:Refresh()
+	self:RefreshData()
 end
 
-function PANEL:Refresh(toselect)
+function PANEL:RefreshData(toselect)
 	self.opponentselect:Clear()
 
 	for k,v in pairs(player.GetAll()) do

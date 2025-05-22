@@ -70,7 +70,7 @@ function PANEL:Init()
 	self.teams:SetSpaceX(3)
 	self.teams:SetSpaceY(3)
 
-	self:Refresh()
+	self:RefreshData()
 
 	self.teams:InvalidateChildren(true)
 
@@ -92,7 +92,7 @@ function PANEL:Paint(w, h)
 
 end
 
-function PANEL:Refresh()
+function PANEL:RefreshData()
 	self:RefreshScoreboard()
 	self:RefreshArenas()
 end

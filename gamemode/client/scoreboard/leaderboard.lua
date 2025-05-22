@@ -5,7 +5,7 @@ function PANEL:Init()
 
 end
 
-function PANEL:Refresh()
+function PANEL:RefreshData()
 
 end
 

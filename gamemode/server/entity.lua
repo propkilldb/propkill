@@ -37,6 +37,7 @@ function GM:InitPostEntity()
 
 	game.ConsoleCommand("physgun_DampingFactor 1\n")
 	game.ConsoleCommand("physgun_timeToArrive 0.033\n")
+	game.ConsoleCommand("physgun_maxrange 8192\n")
 	game.ConsoleCommand("sv_sticktoground 0\n")
 	game.ConsoleCommand("sv_airaccelerate 2000\n")
 	game.ConsoleCommand("collision_shake_amp 0\n")

@@ -95,7 +95,7 @@ function eventmeta:Start(...)
 			ply:SetFrags(0)
 			ply:SetDeaths(0)
 			if self.options.freezeplayers then
-				ply:Freeze(true)
+				ply:PKFreeze(true)
 			end
 		else
 			ply.inEvent = false
@@ -110,7 +110,7 @@ function eventmeta:Start(...)
 	timer.Simple(self.options.startfreezetime, function()
 		if self.options.freezeplayers then
 			for _, ply in next, self.players do
-				ply:Freeze(false)
+				ply:PKFreeze(false)
 			end
 		end
 

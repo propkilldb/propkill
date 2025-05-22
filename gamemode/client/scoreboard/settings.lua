@@ -5,7 +5,7 @@ function PANEL:Init()
 	self:MakeSettings()
 end
 
-function PANEL:Refresh()
+function PANEL:RefreshData()
 	for k,v in pairs(self.Items) do
 		v.Panel:Remove()
 		v.Button:Remove()

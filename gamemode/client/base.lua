@@ -1,7 +1,11 @@
 local spectateFOV = CreateClientConVar("spectate_fov", 100, true, false, "Sets your FOV while spectating another player", 10, 170)
 
-// lower their interpolation to 16ms, 100ms is too high for propkill
-RunConsoleCommand("cl_interp", 0.016)
+// lower their interpolation to 20ms, 100ms is too high for propkill
+local interp = GetConVar("cl_interp")
+if interp:GetFloat() > 0.07 then
+	RunConsoleCommand("cl_interp_ratio", 1)
+	RunConsoleCommand("cl_interp", 0.020)
+end
 
 net.Receive("pk_chatmsg", function(len) 
 	chat.AddText(unpack(net.ReadTable()))

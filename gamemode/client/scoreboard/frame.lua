@@ -53,6 +53,8 @@ surface.CreateFont("pk_arenasubfont", {
 local menutabs = {
 	{name = "Scoreboard", panel = include("scoreboard.lua")},
 	{name = "Duel", panel = include("duel.lua")},
+	{name = "Tournament", panel = include("tournament.lua"), admin = true},
+	{name = "Bracket", panel = include("bracket.lua")},
 	{name = "Leaderboard", panel = include("leaderboard.lua")},
 	{name = "Settings", panel = include("settings.lua")},
 }
@@ -120,12 +122,21 @@ function PK.CreateMenu()
 	local tabs = vgui.Create("DPropertySheet", frame)
 	tabs:DockMargin(0, -30, 0, 0)
 	tabs:Dock(FILL)
+	tabs:SetFadeTime(0)
 	function tabs:Paint(w, h)
 		draw.RoundedBox(0, 0, 30, w, h-30, PK.colors.primaryAlt)
 	end
 
+	function tabs:OnActiveTabChanged(old, new)
+		local panel = new:GetPanel()
+		if IsValid(panel) and panel.RefreshData != nil then
+			panel:RefreshData()
+		end
+	end
+
 	for k,v in pairs(menutabs) do
-		local sheet = tabs:AddSheet(v.name, vgui.CreateFromTable(v.panel, tabs))
+		if v.admin and not LocalPlayer():IsSuperAdmin() then continue end
+		local sheet = tabs:AddSheet(v.name, vgui.CreateFromTable(v.panel, tabs), v.admin and "icon16/shield.png", true, true)
 		sheet.Panel:DockMargin(4,4,4,4)
 		sheet.Panel:Dock(FILL)
 	end
@@ -146,11 +157,14 @@ function PK.CreateMenu()
 		function v.Tab:ApplySchemeSettings()
 			local ExtraInset = 10
 
-			self:SetTextInset(ExtraInset, 8)
-			local w, h = self:GetContentSize()
-			h = 30
+			if IsValid(v.Tab.Image) then
+				ExtraInset = 26
+			end
 
-			self:SetSize(w + ExtraInset + 2 , h)
+			self:SetTextInset(ExtraInset, 8)
+			local w = self:GetContentSize()
+
+			self:SetSize(w + 12, 30)
 
 			DLabel.ApplySchemeSettings(self)
 		end
@@ -162,20 +176,24 @@ function PK.CreateMenu()
 	end
 
 	function frame:Show(sel, ...)
-		for k,v in pairs(tabs.Items) do
-			if IsValid(v.Panel) and v.Panel.Refresh != nil then
-				v.Panel:Refresh(...)
-			end
+		self:SetVisible(true)
 
+		for k,v in pairs(tabs.Items) do
 			if isstring(sel) and sel == v.Name then
 				tabs:SetActiveTab(v.Tab)
 			end
 		end
-		self:SetVisible(true)
+
+		local panel = tabs:GetActiveTab():GetPanel()
+		if IsValid(panel) and panel.RefreshData != nil then
+			panel:RefreshData(...)
+		end
 	end
 
 	return frame
 end
+
+PK.menuLastHideTime = PK.menuLastHideTime or 0
 
 if PK.menu and IsValid(PK.menu) then
 	PK.menu:Close()
@@ -186,15 +204,26 @@ function GM:ScoreboardShow(tab, ...)
 	if not IsValid(PK.menu) then
 		PK.menu = PK.CreateMenu()
 	end
+
+	if not tab and (CurTime() - PK.menuLastHideTime) > 10 then
+		tab = "Scoreboard"
+	end
+	
 	gui.EnableScreenClicker(true)
 	//RestoreCursorPosition()
-	PK.menu:Show(tab or "Scoreboard", ...)
+	PK.menu:Show(tab, ...)
 end
 
 function GM:ScoreboardHide()
 	RememberCursorPosition()
 	gui.EnableScreenClicker(false)
-	PK.menu:Hide()
+
+	if IsValid(PK.menu) then
+		PK.menuLastHideTime = CurTime()
+		PK.menu:Hide()
+	else
+		PK.menuLastHideTime = 0
+	end
 end
 
 net.Receive("pk_teamselect", function()
@@ -204,10 +233,3 @@ net.Receive("pk_teamselect", function()
 		GAMEMODE.ScoreboardShow(GAMEMODE, "Duel")
 	end
 end)
-
-hook.Add("InitPostEntity", "create menu", function()
-	if not IsValid(PK.menu) then
-		PK.menu = PK.CreateMenu()
-	end
-end)
-

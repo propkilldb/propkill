@@ -8,7 +8,7 @@ local event = newEvent("duel", "1v1", {
 
 event:Hook("PlayerCheckLimit", "duel prop limit", function(ply, name, current, max)
 	-- TODO: PK.config.maxduelprops
-	if name == "props" and current >= 3 then
+	if name == "props" and current >= 4 then
 		return false
 	end
 end)
@@ -32,14 +32,34 @@ event:Hook("PlayerDeath", "PK_duel_KillCounter", function(ply, inflictor, attack
 	end
 end)
 
-timer.Create("net_fight_timer", 1, 0, function()
+timer.Create("duel_update_timer", 1, 0, function()
 	if not timer.Exists("fighttimer") then
 		PK.SetNWVar("fighttimer", 0)
 		return
 	end
 
-	local timeleft = timer.TimeLeft("fighttimer")
+	local timeleft = math.abs(timer.TimeLeft("fighttimer")) -- timeleft is negative while paused
 	PK.SetNWVar("fighttimer", timeleft)
+
+	if event.time > 1 then
+		if not event.timeleftOneMin and timeleft <= 60 then
+			event.timeleftOneMin = true
+
+			ChatMsg({
+				Color(0, 120, 255), "Duel",
+				Color(255, 255, 255), ": 1 minute remaining!"
+			})
+		end
+
+		if not event.timeleftTenSec and timeleft <= 10 then
+			event.timeleftTenSec = true
+
+			ChatMsg({
+				Color(0, 120, 255), "Duel",
+				Color(255, 255, 255), ": 10 seconds remaining!"
+			})
+		end
+	end
 end)
 
 util.AddNetworkString("pk_duelinvite")
@@ -62,7 +82,20 @@ net.Receive("pk_duelaccept", function(_, fightee)
 	end
 end)
 
+local duelsdisabled = CreateConVar("pk_duelsdisabled", "0", {FCVAR_ARCHIVE, FCVAR_REPLICATED})
+
+concommand.Add("pk_toggleduels", function(ply)
+	if not ply:IsSuperAdmin() then return end
+
+	duelsdisabled:SetBool(not duelsdisabled:GetBool())
+	ply:ChatPrint("Duels are now " .. (duelsdisabled:GetBool() and "disabled" or "enabled"))
+end)
+
 function InvitePlayerToDuel(fighter, fightee, kills, time, ranked)
+	if duelsdisabled:GetBool() then
+		fighter:ChatPrint("Duels are currently disabled")
+		return
+	end
 	if PK.currentEvent then return end
 	if not IsValid(fightee) or not fightee:IsPlayer() then return end
 	if not IsValid(fighter) or not fighter:IsPlayer() then return end
@@ -94,6 +127,10 @@ function InvitePlayerToDuel(fighter, fightee, kills, time, ranked)
 end
 
 function AcceptDuel(fighter, fightee)
+	if duelsdisabled:GetBool() then
+		fightee:ChatPrint("Duels are currently disabled")
+		return
+	end
 	if PK.currentEvent then return end
 	if not IsValid(fightee) or not fightee:IsPlayer() then return end
 	if not IsValid(fighter) or not fighter:IsPlayer() then return end
@@ -175,8 +212,8 @@ event:OnGameEnd(function(forfeitply)
 
 	if not IsValid(ply1) or not IsValid(ply2) then return end
 
-	p1kills = ply1:GetNWInt("duelscore", 0)
-	p2kills = ply2:GetNWInt("duelscore", 0)
+	local p1kills = ply1:GetNWInt("duelscore", 0)
+	local p2kills = ply2:GetNWInt("duelscore", 0)
 
 	local winner = p1kills > p2kills and ply1 or ply2
 	local loser = p1kills < p2kills and ply1 or ply2
@@ -217,4 +254,7 @@ end)
 event:OnCleanup(function()
 	SetGlobalEntity("player1", NULL)
 	SetGlobalEntity("player2", NULL)
+
+	event.timeleftOneMin = nil
+	event.timeleftTenSec = nil
 end)

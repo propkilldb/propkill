@@ -324,29 +324,26 @@ end
 concommand.Add("pk_cl_physics", UseLerpCommand)
 
 local bhopEnabled = true
+local Hopping = false
+local Hopped = false
 
 hook.Add("Think", "PK_Bhop", function()
 	if not bhopEnabled then return end
 	local Hopped = input.IsKeyDown(KEY_SPACE)
 	local StopHop = vgui.CursorVisible()
 	local LP = LocalPlayer()
-	local MS = {}
 
-	if( !StopHop and !MS.Spectating and MS.Hopping != Hopped ) then
-		if(!Hopped) then RunConsoleCommand("-jump") end
-		MS.Hopping = Hopped
+	if( !StopHop and Hopping != Hopped ) then
+		Hopping = Hopped
 	end
 
-	if( MS.Hopping ) then
+	if( Hopping ) then
 		if( StopHop ) then
-			MS.Hopping = false
-			RunConsoleCommand("-jump")
+			Hopping = false
 			return
 		end
 		if(LP:GetGroundEntity() != NULL or LP:WaterLevel() >0 or LP:GetMoveType() == MOVETYPE_NOCLIP or LP:InVehicle()) then
-			RunConsoleCommand("+jump")
-		else
-			RunConsoleCommand("-jump")
+			jump = true
 		end
 	end
 end)
