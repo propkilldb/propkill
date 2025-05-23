@@ -13,13 +13,34 @@ function GM:PlayerSpawnVehicle(ply) Notify(ply, "You can only spawn props!") ret
 function GM:PlayerSpawnNPC(ply) Notify(ply, "You can only spawn props!") return false end
 function GM:PlayerSpawnRagdoll(ply) Notify(ply, "You can only spawn props!") return false end
 
+local maxpropsize = CreateConVar("pk_maxpropsize", "350", {FCVAR_ARCHIVE}, "max prop size - uses Ent:BoundingRadius() to determin size")
+local largepropcache = {}
+
+-- clear the cache if the max size changes
+cvars.AddChangeCallback("pk_maxpropsize", function()
+    largepropcache = {}
+end)
+
 hook.Add("PlayerSpawnProp", "pk_canspawnprop", function(ply, model)
+	if largepropcache[model] then
+		return false
+	end
+
 	if not ply:Alive() then
 		return false
 	end
 
 	if ply:IsSpectating() then
 		return false
+	end
+end)
+
+hook.Add("PlayerSpawnedProp", "pk_volumetriclimit", function(ply, model, ent)
+	if not IsValid(ent) then return end
+
+	if ent:BoundingRadius() > maxpropsize:GetInt() then
+		largepropcache[model] = true
+		ent:Remove()
 	end
 end)
 
