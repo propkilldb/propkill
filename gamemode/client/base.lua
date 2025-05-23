@@ -43,25 +43,13 @@ hook.Add("ChatText", "disable joinleave messages", function(pid, name, text, typ
 	end
 end)
 
-//disable screen wobble on landing
-hook.Add("CalcView", "CalcVyoo", function(ply, pos, ang, fov)
-	// if there is more than 1 calcview hook, we should just remove ourself, so we dont override whatever they're doing
-	local thishook = hook.GetTable()["CalcView"]["CalcVyoo"]
-	if next(hook.GetTable()["CalcView"], "CalcVyoo") != thishook then
-		hook.Remove("CalcView", "CalcVyoo")
+hook.Add("Think", "pk_spectatefov", function()
+	if not IsValid(LocalPlayer()) then return end
+
+	local obstarget = LocalPlayer():GetObserverTarget()
+	if not IsValid(obstarget) then return end
+
+	if obstarget:GetFOV() != spectateFOV:GetInt() then
+		obstarget:SetFOV(spectateFOV:GetInt())
 	end
-
-	local target = LocalPlayer():GetObserverTarget()
-	local targetFOV = spectateFOV:GetInt()
-	
-	if IsValid(target) and target:GetFOV() != targetFOV then
-		target:SetFOV(targetFOV)
-	end
-
-	if GetViewEntity() != LocalPlayer() or LocalPlayer():InVehicle() then return end
-
-	local LEA = LocalPlayer():EyeAngles()
-	local view = { origin = pos, angles = LEA }
-
-	return view
 end)
