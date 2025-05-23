@@ -61,9 +61,15 @@ function meta:PKFreeze(state)
 	if state then
 		self.PKFrozen = true
 		self.PKOldMoveState = self:GetMoveType()
-		self:AddFlags(FL_FROZEN)
 		self:AddFlags(FL_GODMODE)
 		self:SetMoveType(MOVETYPE_NONE)
+
+		-- freeze them after 1 tick to try and prevent their eye angles not resetting on respawn
+		timer.Simple(0, function()
+			if IsValid(self) and self.PKFrozen then
+				self:AddFlags(FL_FROZEN)
+			end
+		end)
 	elseif not state then
 		self.PKFrozen = false
 		self:RemoveFlags(FL_FROZEN)

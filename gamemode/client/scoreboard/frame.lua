@@ -55,8 +55,8 @@ local menutabs = {
 	{name = "Duel", panel = include("duel.lua")},
 	{name = "Tournament", panel = include("tournament.lua"), admin = true},
 	{name = "Bracket", panel = include("bracket.lua")},
-	{name = "Leaderboard", panel = include("leaderboard.lua")},
-	{name = "Settings", panel = include("settings.lua")},
+	//{name = "Leaderboard", panel = include("leaderboard.lua")},
+	//{name = "Settings", panel = include("settings.lua")},
 }
 
 PK.colors = {
