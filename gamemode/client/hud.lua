@@ -304,7 +304,9 @@ PK.SetNWVarProxy("liveshud", function(_, enabled)
 
 			-- hacky way to remove proxy cos theres no remove proxy func
 			for k, ply in next, player.GetAll() do
-				ply.NWVarProxies["livesleft"] = nil
+				if ply.NWVarProxies then
+					ply.NWVarProxies["livesleft"] = nil
+				end
 			end
 		end
 

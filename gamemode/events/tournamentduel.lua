@@ -48,7 +48,7 @@ event:Hook("PlayerDeath", "PK_duel_KillCounter", function(ply, inflictor, attack
 	end
 end)
 
-timer.Create("duel_update_timer", 1, 0, function()
+timer.Create("tournament_update_timer", 1, 0, function()
 	if not timer.Exists("fighttimer") then
 		PK.SetNWVar("fighttimer", 0)
 		return
@@ -378,4 +378,18 @@ net.Receive("pk_get_challonge_matches", function(len, ply)
 			net.WriteTable(matches)
 		net.Send(ply)
 	end)
+end)
+
+-- roll command specifically for disagreements in tournament decisions
+hook.Add("PlayerSay", "pk roll command", function(ply, text)
+	local cmd = string.TrimRight(text)
+
+	if cmd == "/roll" or cmd == "!roll" then
+		ChatMsg({
+			Color(0,120,255), ply:Nick(),
+			Color(255,255,255), " rolled " .. tostring(math.random(1, 100)),
+		})
+
+		return ""
+	end
 end)
