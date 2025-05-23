@@ -241,3 +241,9 @@ hook.Add("PlayerLeftEvent", "join message", function(ply)
 		event:End(ply)
 	end
 end)
+
+concommand.Add("pk_endevent", function(ply)
+	if not IsValid(ply) or not ply:IsAdmin() then return end
+
+	PK.currentEvent:End()
+end)
