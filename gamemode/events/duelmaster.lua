@@ -9,13 +9,6 @@ event:Hook("PK_CanStopSpectating", "no, u cant join in", function(ply)
 	return false
 end)
 
-event:Hook("PlayerCheckLimit", "duelmaster prop limit", function(ply, name, current, max)
-	-- TODO: PK.config.maxduelprops
-	if name == "props" and current >= 4 then
-		return false
-	end
-end)
-
 event:Hook("PlayerJoinedEvent", "add them to the queue", function(ply)
 	table.insert(queue, ply)
 	ply:SetSpectating(nil, true)
@@ -149,6 +142,10 @@ event:OnSetup(function(kills)
 	ply1:PKFreeze(true)
 	ply2:PKFreeze(true)
 
+	local maxprops = GetConVar("sbox_maxprops")
+	event.originalMaxProps = maxprops:GetInt()
+	maxprops:SetInt(4)
+
 	ChatMsg({
 		Color(255,255,255), "Starting ",
 		Color(0,120,255), "DuelMaster",
@@ -184,8 +181,6 @@ event:OnGameEnd(function(winner)
 			Color(255,255,255), " event ended"
 		})
 	end
-
-
 end)
 
 event:OnCleanup(function()
@@ -196,6 +191,10 @@ event:OnCleanup(function()
 		ply.dueling = false
 		ply.opponent = nil
 	end
+
+	GetConVar("sbox_maxprops"):SetInt(event.originalMaxProps)
+	
+	event.originalMaxProps = nil
 end)
 
 concommand.Add("duelmaster", function(ply, cmd, args, str)

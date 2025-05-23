@@ -5,11 +5,7 @@ local event = newEvent("tournamentduel", "1v1", {
 	endfreezetime = 3,
 })
 
-event:Hook("PlayerCheckLimit", "duel prop limit", function(ply, name, current, max)
-	if name == "props" and current >= 4 then
-		return false
-	end
-	
+event:Hook("PlayerCheckLimit", "prevent propspawn while paused", function(ply, name, current, max)
 	if event.matchPaused then
 		return false
 	end
@@ -111,6 +107,10 @@ event:OnSetup(function(ply1, ply2, kills, time, disableAlltalk, matchid)
 	ply1:StopSpectating(true)
 	ply2:StopSpectating(true)
 
+	local maxprops = GetConVar("sbox_maxprops")
+	event.originalMaxProps = maxprops:GetInt()
+	maxprops:SetInt(4)
+
 	ChatMsg({
 		Color(255,0,0), "[Tournament]",
 		Color(255,255,255), " Starting match between ",
@@ -208,10 +208,12 @@ end)
 event:OnCleanup(function()
 	SetGlobalEntity("player1", NULL)
 	SetGlobalEntity("player2", NULL)
+	GetConVar("sbox_maxprops"):SetInt(event.originalMaxProps)
 
 	-- have to do cleanup cos the event table gets reused, for now
 	event.matchid = nil
 	event.originalAlltalkValue = nil
+	event.originalMaxProps = nil
 	event.matchPaused = nil
 end)
 

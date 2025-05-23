@@ -6,13 +6,6 @@ local event = newEvent("duel", "1v1", {
 	endfreezetime = 3,
 })
 
-event:Hook("PlayerCheckLimit", "duel prop limit", function(ply, name, current, max)
-	-- TODO: PK.config.maxduelprops
-	if name == "props" and current >= 4 then
-		return false
-	end
-end)
-
 event:Hook("PlayerDeath", "PK_duel_ForceSpawn", function(ply)
 	timer.Simple(3, function()
 		if not ply:Alive() then
@@ -186,6 +179,10 @@ event:OnSetup(function(ply1, ply2, kills, time, ranked)
 	ply1:StopSpectating(true)
 	ply2:StopSpectating(true)
 
+	local maxprops = GetConVar("sbox_maxprops")
+	event.originalMaxProps = maxprops:GetInt()
+	maxprops:SetInt(4)
+
 	ChatMsg({
 		Color(0,120,255), ply1:Nick(),
 		Color(255,255,255), " started a duel against ",
@@ -255,6 +252,9 @@ event:OnCleanup(function()
 	SetGlobalEntity("player1", NULL)
 	SetGlobalEntity("player2", NULL)
 
+	GetConVar("sbox_maxprops"):SetInt(event.originalMaxProps)
+
+	event.originalMaxProps = nil
 	event.timeleftOneMin = nil
 	event.timeleftTenSec = nil
 end)
