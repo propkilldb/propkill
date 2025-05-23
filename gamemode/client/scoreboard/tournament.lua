@@ -112,9 +112,9 @@ function PANEL:Init()
 	self.challongeMatchSelect = vgui.Create("DComboBox", overallLeftContainer)
 	self.challongeMatchSelect:Dock(TOP)
 	self.challongeMatchSelect:SetValue("Loading Challonge matches...")
-	function self.challongeMatchSelect:OnSelect(idx, val, data)
-		self.player1select:SetValue("SELECT PLAYER: " .. data.player1)
-		self.player2select:SetValue("SELECT PLAYER: " .. data.player2)
+	self.challongeMatchSelect.OnSelect = function(this, idx, val, data)
+		self.player1select:SetValue("SELECT: " .. data.player1)
+		self.player2select:SetValue("SELECT: " .. data.player2)
 	end
 
 	local playerSetupPanelsContainer = vgui.Create("DPanel", overallLeftContainer)
@@ -216,7 +216,7 @@ function PANEL:Init()
 			net.WriteInt(self.player1score:GetValue() or 0, 8)
 			net.WriteInt(self.player2score:GetValue() or 0, 8)
 			net.WriteBool(self.disableAlltalkCheck:GetChecked())
-			net.WriteInt(matchid or 0, 32)
+			net.WriteInt((matchid or {}).matchid or 0, 32)
 		net.SendToServer()
 	end
 
@@ -256,7 +256,7 @@ function PANEL:RefreshData()
 		self.challongeMatchSelect:SetValue("Select Challonge match")
 		for k, v in next, matches do
 			if v.state != "open" then continue end
-			self.challongeMatchSelect:AddChoice("Round " .. v.round .. " - " .. v.player1 .. " vs " .. v.player2, k)
+			self.challongeMatchSelect:AddChoice("Round " .. v.round .. " - " .. v.player1 .. " vs " .. v.player2, v)
 		end
 	end)
 end

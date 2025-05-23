@@ -72,8 +72,10 @@ function ChallongeGetMatchData(callback)
 		ChallongeAPIGet("matches", function(matches)
 			for k, v in next, matches do
 				matchmap[v.match.id] = {
+					matchid = v.match.id,
 					state = v.match.state,
 					round = v.match.round,
+					num = v.match.suggested_play_order,
 					player1 = playermap[v.match.player1_id],
 					player2 = playermap[v.match.player2_id],
 				}
