@@ -4,18 +4,14 @@ local event = newEvent("lastmanstanding", "Last Man Standing", {
 	minplayers = 2,
 })
 
-event:Hook("PlayerDeath", "auto switch spectator on death", function(ply)
-	for k,v in next, player.GetAll() do
-		if v:GetObserverTarget() == ply then
-			local nxt, prev = GetNextPlayer(v, ply)
-			v:SpectateEntity(nxt)
-		end
-	end
-end)
-
 event:Hook("PlayerDeath", "kick dead noob out to spectator", function(ply)
-	ply:SetSpectating(nil, true)
-	ply.battling = false
+	ply.lives = (ply.lives or 1) - 1
+	ply:SetNW2Int("livesleft", ply.lives)
+
+	if ply.lives <= 0 then
+		ply:SetSpectating(nil, true)
+		ply.battling = false
+	end
 
 	local playersleft = 0
 	local lastplayer = NULL
@@ -32,14 +28,18 @@ event:Hook("PlayerDeath", "kick dead noob out to spectator", function(ply)
 	end
 end)
 
-event:OnSetup(function()
+event:OnSetup(function(lives)
 	for k, ply in next, event.players do
 		ply.battling = true
+		ply.lives = lives
+		ply:SetNW2Int("livesleft", lives)
 	end
+
+	PK.SetNWVar("liveshud", true)
 
 	ChatMsg({
 		Color(0,120,255), "Last Man Standing",
-		Color(255,255,255), " event starting...",
+		Color(255,255,255), " event with " .. lives .. (lives == 1 and " life" or " lives") .. " starting...",
 	})
 
 	return true
@@ -72,6 +72,8 @@ event:OnCleanup(function()
 	for k,v in next, player.GetAll() do
 		v.battling = false
 	end
+
+	PK.SetNWVar("liveshud", false)
 end)
 
 concommand.Add("lastmanstanding", function(ply, cmd, args, str)
@@ -82,7 +84,13 @@ concommand.Add("lastmanstanding", function(ply, cmd, args, str)
 		return
 	end
 
-	local success, err = event:Start()
+
+	local lives = tonumber(args[1])
+	if not isnumber(lives) then
+		lives = 1
+	end
+
+	local success, err = event:Start(lives)
 	if not success then
 		ply:PrintMessage(HUD_PRINTCONSOLE, tostring(err))
 	end

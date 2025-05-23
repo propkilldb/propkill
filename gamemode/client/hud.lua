@@ -295,9 +295,57 @@ PK.SetNWVarProxy("onesurfmode", function(_, enabled)
 	end
 end)
 
-hook.Add("Think", "spechud", function()
-	local target = LocalPlayer():GetObserverTarget()
+PK.SetNWVarProxy("liveshud", function(_, enabled)
+	if not enabled then
+		if ispanel(liveshud) then
+			liveshud:Remove()
+			liveshud = nil
+			hook.Remove("PK_ObserverTargetChanged", "spectating lives left")
 
+			-- hacky way to remove proxy cos theres no remove proxy func
+			for k, ply in next, player.GetAll() do
+				ply.NWVarProxies["livesleft"] = nil
+			end
+		end
+
+		return
+	end
+
+	if not IsValid(liveshud) then
+		liveshud = bottomhud:Add("pk_hudelement")
+		liveshud:SetHeight(hudheight)
+		liveshud:SetFont("pk_hudfont")
+		liveshud:SetName("Lives")
+		liveshud:SetValue(tostring(LocalPlayer():GetNW2Int("livesleft", 0)))
+		function liveshud:Layout()
+			bottomhud:Layout()
+		end
+
+		LocalPlayer():SetNW2VarProxy("livesleft", function(ent, name, old, new)
+			if not ispanel(liveshud) then return end
+			
+			liveshud:SetValue(tostring(new))
+		end)
+
+		hook.Add("PK_ObserverTargetChanged", "spectating lives left", function(target)
+			if not ispanel(liveshud) then return end
+			if not IsValid(target) or not target:IsPlayer() then return end
+
+			target:SetNW2VarProxy("livesleft", function(ent, name, old, new)
+				if not ispanel(liveshud) then return end
+				if ent != LocalPlayer():GetObserverTarget() then return end
+				
+				liveshud:SetValue(tostring(new))
+			end)
+			
+			liveshud:SetValue(tostring(target:GetNW2Int("livesleft", 0)))
+		end)
+
+		return
+	end
+end)
+
+hook.Add("PK_ObserverTargetChanged", "spechud", function(target)
 	if not IsValid(target) then
 		if ispanel(spectatorhud) then
 			spectatorhud:Remove()

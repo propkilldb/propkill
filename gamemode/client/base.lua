@@ -53,3 +53,15 @@ hook.Add("Think", "pk_spectatefov", function()
 		obstarget:SetFOV(spectateFOV:GetInt())
 	end
 end)
+
+local lastobs = NULL
+
+hook.Add("Think", "PK_ObserverTargetChanged", function()
+	if not IsValid(LocalPlayer()) then return end
+	
+	local obstarget = LocalPlayer():GetObserverTarget()
+	if lastobs != obstarget then
+		lastobs = obstarget
+		hook.Run("PK_ObserverTargetChanged", obstarget)
+	end
+end)
