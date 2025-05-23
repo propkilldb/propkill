@@ -41,7 +41,7 @@ timer.Create("duel_update_timer", 1, 0, function()
 	local timeleft = math.abs(timer.TimeLeft("fighttimer")) -- timeleft is negative while paused
 	PK.SetNWVar("fighttimer", timeleft)
 
-	if event.time > 1 then
+	if (event.time or 0) > 1 then
 		if not event.timeleftOneMin and timeleft <= 60 then
 			event.timeleftOneMin = true
 
