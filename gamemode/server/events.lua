@@ -194,7 +194,8 @@ hook.Add("PlayerDisconnected", "pk event system remove player", function(ply)
 
 	if ply.inEvent then
 		table.RemoveByValue(event.players, ply)
-		hook.Run("PlayerLeftEvent", ply)
+		local handled = hook.Run("PlayerLeftEvent", ply)
+		if handled then return end -- ending handled by event
 	end
 	
 	if #event.players < event.options.minplayers then
@@ -220,7 +221,12 @@ hook.Add("PlayerRequestStartSpectating", "pk event system remove from event", fu
 	if event.options.joinable and ply.inEvent then
 		ply.inEvent = false
 		table.RemoveByValue(event.players, ply)
-		hook.Run("PlayerLeftEvent", ply)
+		local handled = hook.Run("PlayerLeftEvent", ply)
+		if handled then return end -- ending handled by event
+	end
+
+	if #event.players < event.options.minplayers then
+		event:End(ply)
 	end
 end)
 
@@ -236,10 +242,6 @@ hook.Add("PlayerLeftEvent", "join message", function(ply)
 	if not event then return end
 
 	ply:ChatPrint("You have left the " .. event.name .. " event")
-
-	if #event.players < event.options.minplayers then
-		event:End(ply)
-	end
 end)
 
 concommand.Add("pk_endevent", function(ply)

@@ -4,15 +4,7 @@ local event = newEvent("lastmanstanding", "Last Man Standing", {
 	minplayers = 2,
 })
 
-event:Hook("PlayerDeath", "kick dead noob out to spectator", function(ply)
-	ply.lives = (ply.lives or 1) - 1
-	ply:SetNW2Int("livesleft", ply.lives)
-
-	if ply.lives <= 0 then
-		ply:SetSpectating(nil, true)
-		ply.battling = false
-	end
-
+local function CheckRemainingPlayers()
 	local playersleft = 0
 	local lastplayer = NULL
 
@@ -26,6 +18,19 @@ event:Hook("PlayerDeath", "kick dead noob out to spectator", function(ply)
 	if playersleft <= 1 then
 		event:End(lastplayer)
 	end
+end
+
+event:Hook("PlayerDeath", "kick dead noob out to spectator", function(ply)
+	print("is player death calling when u kick??")
+	ply.lives = (ply.lives or 1) - 1
+	ply:SetNW2Int("livesleft", ply.lives)
+
+	if ply.lives <= 0 then
+		ply:SetSpectating(nil, true)
+		ply.battling = false
+	end
+
+	CheckRemainingPlayers()
 end)
 
 event:Hook("PlayerDeathThink", "force respawn", function(ply)
@@ -35,6 +40,13 @@ event:Hook("PlayerDeathThink", "force respawn", function(ply)
 	if ply.DeathTime + 5 < CurTime() then
 		ply:Spawn()
 	end
+end)
+
+event:Hook("PlayerLeftEvent", "remove players from count and re-check", function(ply)
+	ply.battling = false
+	CheckRemainingPlayers()
+
+	return true
 end)
 
 event:OnSetup(function(lives)
