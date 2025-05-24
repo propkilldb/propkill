@@ -109,6 +109,7 @@ event:OnSetup(function(kills)
 	kills = kills or 8
 
 	queue = table.Copy(event.players)
+	table.Shuffle(queue)
 
 	local ply1 = table.remove(queue, 1)
 	local ply2 = table.remove(queue, 1)
