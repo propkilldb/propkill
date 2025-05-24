@@ -6,12 +6,13 @@ local event = newEvent("duel", "1v1", {
 	endfreezetime = 3,
 })
 
-event:Hook("PlayerDeath", "PK_duel_ForceSpawn", function(ply)
-	timer.Simple(3, function()
-		if not ply:Alive() then
-			ply:Spawn()
-		end
-	end)
+event:Hook("PlayerDeathThink", "PK_duel_ForceSpawn", function(ply)
+	if not IsValid(ply) then return end
+	if ply:IsSpectating() then return end
+	
+	if ply.DeathTime + 5 < CurTime() then
+		ply:Spawn()
+	end
 end)
 
 event:Hook("PlayerDeath", "PK_duel_KillCounter", function(ply, inflictor, attacker)
@@ -35,7 +36,7 @@ timer.Create("duel_update_timer", 1, 0, function()
 	PK.SetNWVar("fighttimer", timeleft)
 
 	if (event.time or 0) > 1 then
-		if not event.timeleftOneMin and timeleft <= 60 then
+		if not event.timeleftOneMin and timeleft <= 61 then
 			event.timeleftOneMin = true
 
 			ChatMsg({
@@ -44,7 +45,7 @@ timer.Create("duel_update_timer", 1, 0, function()
 			})
 		end
 
-		if not event.timeleftTenSec and timeleft <= 10 then
+		if not event.timeleftTenSec and timeleft <= 11 then
 			event.timeleftTenSec = true
 
 			ChatMsg({

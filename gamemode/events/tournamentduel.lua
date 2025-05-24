@@ -17,12 +17,13 @@ event:Hook("CanUndo", "prevent undo while paused", function(ply, undo)
 	end
 end)
 
-event:Hook("PlayerDeath", "PK_duel_ForceSpawn", function(ply)
-	timer.Simple(6, function()
-		if not ply:Alive() then
-			ply:Spawn()
-		end
-	end)
+event:Hook("PlayerDeathThink", "PK_duel_ForceSpawn", function(ply)
+	if not IsValid(ply) then return end
+	if ply:IsSpectating() then return end
+	
+	if ply.DeathTime + 5 < CurTime() then
+		ply:Spawn()
+	end
 end)
 
 event:Hook("PlayerDeath", "PK_duel_KillCounter", function(ply, inflictor, attacker)

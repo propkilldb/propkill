@@ -242,6 +242,7 @@ function GM:PlayerDeath(ply, inflictor, attacker)
 	end
 
 	ply.PKStreak = 0
+	ply.DeathTime = CurTime()
 	ply.NextSpawnTime = CurTime() + 1
 
 	local updateLeader = false

@@ -28,6 +28,15 @@ event:Hook("PlayerDeath", "kick dead noob out to spectator", function(ply)
 	end
 end)
 
+event:Hook("PlayerDeathThink", "force respawn", function(ply)
+	if not IsValid(ply) then return end
+	if ply:IsSpectating() then return end
+	
+	if ply.DeathTime + 5 < CurTime() then
+		ply:Spawn()
+	end
+end)
+
 event:OnSetup(function(lives)
 	for k, ply in next, event.players do
 		ply.battling = true
