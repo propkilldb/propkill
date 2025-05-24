@@ -324,10 +324,17 @@ net.Receive("pk_duel_adjust_time", function(len, ply)
 	local timeAdjustment = net.ReadInt(16)
 
 	if timer.Exists("fighttimer") then
-		local currentTimeLeft = math.abs(timer.TimeLeft("fighttimer"))
-		local newTargetDelay = math.max(0, currentTimeLeft + timeAdjustment)
+		local currentTimeLeft = timer.TimeLeft("fighttimer")
+		local newTargetDelay = math.max(0, math.abs(currentTimeLeft) + timeAdjustment)
 		
-		timer.Adjust("fighttimer", newTargetDelay)
+		if currentTimeLeft < 0 then
+			timer.UnPause("fighttimer")
+			timer.Adjust("fighttimer", newTargetDelay)
+			timer.Pause("fighttimer")
+		else
+			timer.Adjust("fighttimer", newTargetDelay)
+		end
+		
 		PK.SetNWVar("fighttimer", newTargetDelay)
 
 		local action = timeAdjustment >= 0 and "added to" or "removed from"
