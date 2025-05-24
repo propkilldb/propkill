@@ -210,13 +210,6 @@ function PANEL:RefreshScoreboard()
 							vv:ShowProfile()
 						end
 					end)
-					if IsValid(PK.arenas[arena]) and LocalPlayer():GetNWString("arena") != arena then
-						right:AddOption("Join", function()
-							net.Start("PK_ArenaNetJoinArena")
-								net.WriteString(vv:GetNWString("arena"))
-							net.SendToServer()
-						end)
-					end
 					right:AddOption("Spectate", function()
 						net.Start("PK_SpectatePlayer")
 							net.WriteEntity(vv)
@@ -228,6 +221,14 @@ function PANEL:RefreshScoreboard()
 					right:AddOption((vv:IsMuted() and "Unmute" or "Mute"), function()
 						vv:SetMuted(not vv:IsMuted())
 					end)
+					if LocalPlayer():IsAdmin() then
+						right:AddSpacer()
+						right:AddOption("Kick from event", function()
+							net.Start("PK_EventKick")
+								net.WriteEntity(vv)
+							net.SendToServer()
+						end)
+					end
 
 					right:Open()
 				end

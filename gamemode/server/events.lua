@@ -244,6 +244,29 @@ hook.Add("PlayerLeftEvent", "join message", function(ply)
 	ply:ChatPrint("You have left the " .. event.name .. " event")
 end)
 
+util.AddNetworkString("PK_EventKick")
+
+net.Receive("PK_EventKick", function(_, ply)
+	local event = PK.currentEvent
+	if not event then return end
+	if not IsValid(ply) or not ply:IsAdmin() then return end
+
+	local plytokick = net.ReadEntity()
+	if not IsValid(plytokick) or not plytokick:IsPlayer() then return end
+
+	if plytokick.inEvent then
+		table.RemoveByValue(event.players, plytokick)
+		plytokick:SetSpectating(nil, true)
+
+		local handled = hook.Run("PlayerLeftEvent", plytokick)
+		if handled then return end -- ending handled by event
+	end
+	
+	if #event.players < event.options.minplayers then
+		event:End(plytokick)
+	end
+end)
+
 concommand.Add("pk_endevent", function(ply)
 	if not IsValid(ply) or not ply:IsAdmin() then return end
 
