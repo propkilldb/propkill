@@ -1,7 +1,7 @@
 local event = newEvent("tournamentduel", "1v1", {
 	joinable = false,
 	minplayers = 2,
-	startfreezetime = 3,
+	startfreezetime = 6,
 	endfreezetime = 3,
 })
 
@@ -21,7 +21,7 @@ event:Hook("PlayerDeathThink", "PK_duel_ForceSpawn", function(ply)
 	if not IsValid(ply) then return end
 	if ply:IsSpectating() then return end
 	
-	if ply.DeathTime + 5 < CurTime() then
+	if ply.DeathTime + 6 < CurTime() then
 		ply:Spawn()
 	end
 end)

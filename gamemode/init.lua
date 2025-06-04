@@ -39,6 +39,7 @@ AddCSLuaFile("client/hud.lua")
 AddCSLuaFile("client/hax.lua")
 AddCSLuaFile("client/derma.lua")
 AddCSLuaFile("client/base.lua")
+AddCSLuaFile("client/tournaments.lua")
 
 AddCSLuaFile("shared/entity.lua")
 AddCSLuaFile("shared/networking.lua")

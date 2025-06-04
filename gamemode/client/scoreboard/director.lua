@@ -113,8 +113,31 @@ function PANEL:Init()
 	self.challongeMatchSelect:Dock(TOP)
 	self.challongeMatchSelect:SetValue("Loading Challonge matches...")
 	self.challongeMatchSelect.OnSelect = function(this, idx, val, data)
-		self.player1select:SetValue("SELECT: " .. data.player1)
-		self.player2select:SetValue("SELECT: " .. data.player2)
+		if data.player1steamid then
+			for k, v in next, self.player1select.Data do
+				if IsValid(v) and v:IsPlayer() then
+					if data.player1steamid == v:SteamID64() then
+						self.player1select:ChooseOptionID(k)
+						break
+					end
+				end
+			end
+		else
+			self.player1select:SetValue("SELECT: " .. data.player1)
+		end
+
+		if data.player2steamid then
+			for k, v in next, self.player2select.Data do
+				if IsValid(v) and v:IsPlayer() then
+					if data.player2steamid == v:SteamID64() then
+						self.player2select:ChooseOptionID(k)
+						break
+					end
+				end
+			end
+		else
+			self.player2select:SetValue("SELECT: " .. data.player2)
+		end
 	end
 
 	local playerSetupPanelsContainer = vgui.Create("DPanel", overallLeftContainer)

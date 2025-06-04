@@ -50,6 +50,14 @@ surface.CreateFont("pk_arenasubfont", {
 	antialias = true,
 })
 
+surface.CreateFont("pk_tournamentjoin", {
+	font = "Verdana",
+	size = 24,
+	weight = 550,
+	antialias = true,
+	shadow = false,
+})
+
 local menutabs = {
 	{
 		name = "Scoreboard",

@@ -215,3 +215,104 @@ function PANEL:SetInfo(kills, time)
 end
 
 vgui.Register("pk_duelinvite", PANEL, "DPanel")
+
+PANEL = {}
+
+function PANEL:Init()
+	self:SetSize(375, 175)
+	self:SetPos(ScrW() - 475, 100)
+	function self:Paint(w, h)
+		surface.SetDrawColor(60,60,60,220)
+		surface.DrawRect(20, 0, w-40, h-44)
+	end
+
+	local name = vgui.Create("DLabel", self)
+	name:SetText("Tournament")
+	name:SetTall(self:GetTall()/4)
+	name:SetContentAlignment(5)
+	name:SetTextColor(Color(250, 250, 250))
+	name:SetFont("pk_dueltitle")
+	name:Dock(TOP)
+	function name:Paint(w, h)
+		surface.SetDrawColor(255,255,255,255)
+		draw.NoTexture()
+		surface.SetDrawColor(0, 100, 220)
+		surface.DrawTexturedRectRotated(w/2, h/2, w-32, h+100, -8)
+	end
+
+	local info = vgui.Create("DPanel", self)
+	info:SetTall(self:GetTall()/2)
+	info:DockMargin(20,0,20,0)
+	info:Dock(TOP)
+
+	self.tournamentinfo = markup.Parse("<font=pk_duelinfo><colour=240,240,240,255>loading...</colour></font>")
+
+	function info:Paint(w, h)
+		local this = self:GetParent()
+		this.tournamentinfo:Draw(w/2, h-8, TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM, 255, TEXT_ALIGN_CENTER)
+	end
+
+	local accept = vgui.Create("DButton", self)
+	accept:SetFont("pk_duelbutton")
+	accept:SetText("Join")
+	accept:SetTextColor(Color(255,255,255))
+	accept:SetWide(self:GetWide()/2)
+	accept:DockMargin(4,4,4,4)
+	accept:Dock(LEFT)
+	function accept:Paint(w, h)
+		if self:IsHovered() then
+			surface.SetDrawColor(60, 240, 60)
+		else
+			surface.SetDrawColor(60, 200, 60)
+		end
+
+		draw.NoTexture()
+		surface.DrawTexturedRectRotated(w/2, h/2, w-12, h+100, -6)
+	end
+	accept.DoClick = function() self:DoAccept() end
+
+	local close = vgui.Create("DButton", self)
+	close:SetFont("pk_duelbutton")
+	close:SetText("Close")
+	close:SetTextColor(Color(255,255,255))
+	close:SetWide(self:GetWide()/2)
+	close:DockMargin(4,4,4,4)
+	close:Dock(RIGHT)
+	function close:Paint(w, h)
+		if self:IsHovered() then
+			surface.SetDrawColor(240, 60, 60)
+		else
+			surface.SetDrawColor(200, 60, 60)
+		end
+
+		draw.NoTexture()
+		surface.DrawTexturedRectRotated(w/2, h/2, w-12, h+100, -6)
+	end
+	close.DoClick = function() self:DoClose() end
+end
+
+function PANEL:DoAccept()
+	-- for override
+end
+
+function PANEL:DoClose()
+	-- for override
+end
+
+function PANEL:SetInfo(name, date)
+	local timedelta = date - os.time()
+	local timestr = os.date("%I:%M %p", date)
+	local datestr = os.date("%B %d", date)
+
+	local white = "<colour=240,240,240,255>"
+	local blue = "<colour=50,146,255>"
+
+	self.tournamentinfo = markup.Parse([[<font=pk_dueltext>]] .. white .. 
+		[[The ]] .. blue .. markup.Escape(name) .. white ..
+		"\nstarts in " .. blue .. string.NiceTime(timedelta) .. white ..
+		[[ on ]] .. blue .. markup.Escape(datestr) .. white ..
+		"\nat " .. blue .. markup.Escape(timestr)
+	)
+end
+
+vgui.Register("pk_tournamentinvite", PANEL, "DPanel")
