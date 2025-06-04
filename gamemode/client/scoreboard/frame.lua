@@ -51,10 +51,25 @@ surface.CreateFont("pk_arenasubfont", {
 })
 
 local menutabs = {
-	{name = "Scoreboard", panel = include("scoreboard.lua")},
-	{name = "Duel", panel = include("duel.lua")},
-	{name = "Tournament", panel = include("tournament.lua"), admin = true},
-	{name = "Bracket", panel = include("bracket.lua")},
+	{
+		name = "Scoreboard",
+		panel = include("scoreboard.lua")
+	},
+	{
+		name = "Duel",
+		panel = include("duel.lua")
+	},
+	{
+		name = "Tournament",
+		panel = include("tournament.lua"),
+		condition = function() return GetConVarString("pk_challonge_id") != "" end
+	},
+	{
+		name = "Director",
+		panel = include("director.lua"),
+		condition = function() return GetConVarString("pk_challonge_id") != "" and LocalPlayer():IsAdmin() end,
+		icon = "icon16/shield.png"
+	},
 	//{name = "Leaderboard", panel = include("leaderboard.lua")},
 	//{name = "Settings", panel = include("settings.lua")},
 }
@@ -135,8 +150,8 @@ function PK.CreateMenu()
 	end
 
 	for k,v in pairs(menutabs) do
-		if v.admin and not LocalPlayer():IsSuperAdmin() then continue end
-		local sheet = tabs:AddSheet(v.name, vgui.CreateFromTable(v.panel, tabs), v.admin and "icon16/shield.png", true, true)
+		if v.condition and not v.condition() then continue end
+		local sheet = tabs:AddSheet(v.name, vgui.CreateFromTable(v.panel, tabs), v.icon and v.icon or nil, true, true)
 		sheet.Panel:DockMargin(4,4,4,4)
 		sheet.Panel:Dock(FILL)
 	end

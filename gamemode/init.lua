@@ -53,7 +53,7 @@ AddCSLuaFile("client/scoreboard/leaderboard.lua")
 AddCSLuaFile("client/scoreboard/settings.lua")
 AddCSLuaFile("client/scoreboard/duel.lua")
 AddCSLuaFile("client/scoreboard/tournament.lua")
-AddCSLuaFile("client/scoreboard/bracket.lua")
+AddCSLuaFile("client/scoreboard/director.lua")
 
 function GM:Initialize()
 	LogPrint("Initializing...")
