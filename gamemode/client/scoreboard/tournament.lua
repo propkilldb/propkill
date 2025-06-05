@@ -24,6 +24,7 @@ function PANEL:Init()
 	self.joinbutton:SetFont("pk_tournamentjoin")
 	self.joinbutton:SetTextColor(Color(255,255,255))
 	self.joinbutton:SetSize(120,35)
+	self.joinbutton:SetVisible(false)
 	function self.joinbutton:Paint(w, h)
 		surface.SetDrawColor(Color(0,200,0))
 		if self:IsDown() then
@@ -54,6 +55,12 @@ function PANEL:UpdateChallongeID()
 end
 
 function PANEL:RefreshData()
+	if PK.tournamentinfo.state == "pending" then
+		self.joinbutton:SetVisible(true)
+	else
+		self.joinbutton:SetVisible(false)
+	end
+
 	if challonge_id:GetString() != self.bracketid then
 		self:UpdateChallongeID()
 	end

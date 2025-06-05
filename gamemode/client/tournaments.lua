@@ -16,7 +16,7 @@ net.Receive("pk_tournementnotify", function()
 		date = date
 	}
 
-	if state != "open" then
+	if state != "pending" then
 		return
 	end
 

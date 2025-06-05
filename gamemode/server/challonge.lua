@@ -132,7 +132,7 @@ end
 function ChallongeRegisterPlayer(ply, callback)
 	if not IsValid(ply) or not ply:IsPlayer() then return end
 	if not callback then callback = (function() end) end
-	if ply:Ping() > 140 then callback(false, "ping limit exceeded") return end
+	//if ply:Ping() > 140 then callback(false, "ping limit exceeded") return end
 
 	ChallongeAPIGet("participants", function(participants)
 		if not IsValid(ply) or not ply:IsPlayer() then return end
@@ -174,7 +174,7 @@ net.Receive("pk_tournamentenroll", function(_, ply)
 		end
 
 		ply.PK_TournamentEnrolled = true
-		ply:ChatPrint("Successfully joined the " .. tournamentName)
+		ply:ChatPrint("Successfully joined the " .. PK.tournamentinfo.name)
 	end)
 end)
 
@@ -206,7 +206,7 @@ function ChallongeUpdateTournamentInfo()
 
 		PK.tournamentinfo = {
 			name = tournament.name,
-			state = tournament.tournamentState,
+			state = tournament.state,
 			time = tournament.start_at and ParseISODateTimestamp(tournament.start_at) or 0
 		}
 	end)
