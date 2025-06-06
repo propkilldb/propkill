@@ -3,22 +3,6 @@ PANEL.Base = "DHTML"
 local challonge_id = CreateConVar("pk_challonge_id", "", {FCVAR_REPLICATED, FCVAR_ARCHIVE})
 
 function PANEL:Init()
-	function self:OnBeginLoadingDocument()
-		self:AddFunction("console", "log", function() end) -- stfu
-		self:AddFunction("console", "info", function() end) -- stfu
-		self:AddFunction("console", "warn", function() end) -- stfu
-	end
-
-	if BRANCH == "unknown" then -- unknown = default branch
-		self:SetHTML([[
-			<br>
-			<center style="color: #fff">
-				<h2>Please change your Garry's Mod to the x86-64 beta branch to see the bracket</h2>
-				<img src="https://images.steamusercontent.com/ugc/1898857260618639534/16524E2140288CD70902A5D845289D29C1450B94/">
-			</center>
-		]])
-	end
-
 	self.joinbutton = vgui.Create("DButton", self)
 	self.joinbutton:SetText("Join")
 	self.joinbutton:SetFont("pk_tournamentjoin")
@@ -42,16 +26,22 @@ function PANEL:Init()
 end
 
 function PANEL:PerformLayout(w, h)
+	if not self.joinbutton then return end
+
 	self.joinbutton:SetPos(0, h - self.joinbutton:GetTall())
 end
 
 function PANEL:UpdateChallongeID()
 	local bracketid = challonge_id:GetString()
 	if bracketid == "" then return end
-	if BRANCH == "unknown" then return end
-
+	
 	self.bracketid = bracketid
-	self:OpenURL("https://challonge.com/" .. bracketid .. "/module")
+	if BRANCH == "unknown" then
+		self:OpenURL("https://challonge.com/" .. bracketid .. ".svg")
+		self.lastRefresh = os.time()
+	else
+		self:OpenURL("https://challonge.com/" .. bracketid .. "/module")
+	end
 end
 
 function PANEL:RefreshData()
@@ -64,10 +54,45 @@ function PANEL:RefreshData()
 	if challonge_id:GetString() != self.bracketid then
 		self:UpdateChallongeID()
 	end
+
+	if BRANCH == "unknown" and os.time() - self.lastRefresh > 5 then
+		self.lastRefresh = os.time()
+		self:Refresh()
+	end
+end
+
+function PANEL:OnBeginLoadingDocument()
+	self:AddFunction("console", "log", function() end) -- stfu
+	self:AddFunction("console", "info", function() end) -- stfu
+	self:AddFunction("console", "warn", function() end) -- stfu
+	self:AddFunction("console", "error", function() end) -- stfu
+end
+
+function PANEL:OnDocumentReady()
+	if BRANCH != "unknown" then return end
+
+	-- hacky fix to remove the giant logo and tournament name
+	self:QueueJavascript([[
+		var svgs = document.getElementsByTagName("svg");
+		var txts = document.getElementsByTagName("text");
+		var root = svgs[0];
+		var logo = svgs[1];
+		var title = txts[0];
+		var bracket = svgs[2];
+
+		root.removeChild(logo);
+		root.removeChild(title);
+
+		var reduceamount = Number(bracket.getAttribute("y"));
+		bracket.setAttribute("y", "0");
+
+		root.setAttribute("height", String(Number(root.getAttribute("height")) - reduceamount));
+		root.removeAttribute("viewBox");
+	]])
 end
 
 function PANEL:Paint(w, h)
-
+	draw.RoundedBox(0, 0, 0, w, h, Color(255,255,255))
 end
 
 return PANEL
