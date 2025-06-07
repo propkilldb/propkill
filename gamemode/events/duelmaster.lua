@@ -20,6 +20,7 @@ end)
 
 event:Hook("PlayerDeath", "select next duelist", function(ply1)
 	if not ply1.dueling then return end
+	ply1.dueling = false
 
 	local ply2 = ply1.opponent
 
@@ -33,8 +34,9 @@ event:Hook("PlayerDeath", "select next duelist", function(ply1)
 
 	timer.Simple(1, function()
 		DespawnDuelist(ply1)
-		SpawnNextDuelist(ply2)
 	end)
+
+	SpawnNextDuelist(ply2)
 end)
 
 -- spawn the next duelist from the queue
