@@ -229,16 +229,6 @@ PK.SetNWVarProxy("streakkills", function(_, kills)
 	leaderhud:SetLeader(PK.GetNWVar("streakleader", NULL), kills)
 end)
 
-function PrettyTime(seconds)
-	local timestr = ""
-
-	if seconds >= 60 then
-		timestr = string.NiceTime(seconds) .. ", "
-	end
-	
-	return timestr .. string.NiceTime(seconds % 60)
-end
-
 PK.SetNWVarProxy("fighttimer", function(_, timeleft)
 	if timeleft == 0 then
 		if ispanel(timelefthud) then
@@ -341,6 +331,58 @@ PK.SetNWVarProxy("liveshud", function(_, enabled)
 			end)
 			
 			liveshud:SetValue(tostring(target:GetNW2Int("livesleft", 0)))
+		end)
+
+		return
+	end
+end)
+
+PK.SetNWVarProxy("timelefthud", function(_, enabled)
+	if not enabled then
+		if ispanel(timehud) then
+			timehud:Remove()
+			timehud = nil
+			hook.Remove("PK_ObserverTargetChanged", "spectating time left")
+
+			-- hacky way to remove proxy cos theres no remove proxy func
+			for k, ply in next, player.GetAll() do
+				if ply.NWVarProxies then
+					ply.NWVarProxies["timeleft"] = nil
+				end
+			end
+		end
+
+		return
+	end
+
+	if not IsValid(timehud) then
+		timehud = bottomhud:Add("pk_hudelement")
+		timehud:SetHeight(hudheight)
+		timehud:SetFont("pk_hudfont")
+		timehud:SetName("Time")
+		timehud:SetValue(PrettyTime(LocalPlayer():GetNW2Float("timeleft", 0)))
+		function timehud:Layout()
+			bottomhud:Layout()
+		end
+
+		LocalPlayer():SetNW2VarProxy("timeleft", function(ent, name, old, new)
+			if not ispanel(timehud) then return end
+			
+			timehud:SetValue(PrettyTime(new))
+		end)
+
+		hook.Add("PK_ObserverTargetChanged", "spectating time left", function(target)
+			if not ispanel(timehud) then return end
+			if not IsValid(target) or not target:IsPlayer() then return end
+
+			target:SetNW2VarProxy("timeleft", function(ent, name, old, new)
+				if not ispanel(timehud) then return end
+				if ent != LocalPlayer():GetObserverTarget() then return end
+				
+				timehud:SetValue(PrettyTime(new))
+			end)
+			
+			timehud:SetValue(PrettyTime(LocalPlayer():GetNW2Float("timeleft", 0)))
 		end)
 
 		return

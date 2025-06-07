@@ -39,3 +39,13 @@ hook.Add("ShouldCollide", "noteamcollide", function(ent, ent2)
 		return false
 	end
 end)
+
+function PrettyTime(seconds)
+	local timestr = ""
+
+	if seconds >= 60 then
+		timestr = string.NiceTime(seconds) .. ", "
+	end
+	
+	return timestr .. string.NiceTime(seconds % 60)
+end

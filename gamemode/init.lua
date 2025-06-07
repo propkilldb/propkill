@@ -24,6 +24,7 @@ include("events/propgame.lua")
 include("events/lastmanstanding.lua")
 include("events/ffa.lua")
 include("events/tournamentduel.lua")
+include("events/timelord.lua")
 
 // modifiers
 include("modifiers/onesurf.lua")
