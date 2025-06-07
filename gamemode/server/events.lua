@@ -45,16 +45,40 @@ function eventmeta:OnSetup(func)
 	self.setupFunc = func
 end
 
+function eventmeta:RunSetup(...)
+	if self.setupFunc then
+		self.setupFunc(...)
+	end
+end
+
 function eventmeta:OnGameStart(func)
 	self.gameStartFunc = func
+end
+
+function eventmeta:RunGameStart(...)
+	if self.gameStartFunc then
+		self.gameStartFunc(...)
+	end
 end
 
 function eventmeta:OnGameEnd(func)
 	self.gameEndFunc = func
 end
 
+function eventmeta:RunGameEnd(...)
+	if self.gameEndFunc then
+		self.gameEndFunc(...)
+	end
+end
+
 function eventmeta:OnCleanup(func)
 	self.cleanupFunc = func
+end
+
+function eventmeta:RunCleanup(...)
+	if self.cleanupFunc then
+		self.cleanupFunc(...)
+	end
 end
 
 function eventmeta:Start(...)
@@ -71,16 +95,14 @@ function eventmeta:Start(...)
 		end
 	end
 
-	if self.setupFunc then
-		local success, err = self.setupFunc(...)
-
-		if not success then
-			return success, err
-		end
-	end
-
 	if #self.players < self.options.minplayers then
 		return false, "not enough players"
+	end
+
+	local success, err = self:RunSetup(...)
+	if success == false then
+		self:RunCleanup()
+		return success, err
 	end
 
 	PK.currentEvent = self
@@ -114,18 +136,14 @@ function eventmeta:Start(...)
 			end
 		end
 
-		if self.gameStartFunc then
-			self:gameStartFunc()
-		end
+		self:RunGameStart()
 	end)
 
 	return true
 end
 
 function eventmeta:End(...)
-	if self.gameEndFunc then
-		self.gameEndFunc(...)
-	end
+	self:RunGameEnd(...)
 
 	for k, v in next, self.hooks do
 		hook.Remove(v.eventName, v.hookName)
@@ -136,9 +154,7 @@ function eventmeta:End(...)
 	PK.currentEvent = nil
 
 	timer.Simple(self.options.endfreezetime, function()
-		if self.cleanupFunc then
-			self:cleanupFunc()
-		end
+		self:RunCleanup()
 
 		for _, ply in next, player.GetAll() do
 			if not ply.wasSpectating then
