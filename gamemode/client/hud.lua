@@ -1,92 +1,14 @@
-surface.CreateFont( "stb24", {
+surface.CreateFont("stb24", {
 	font = "Trebuchet24",
 	size = 24,
 	weight = 500,
-	blursize = 0,
-	scanlines = 0,
-	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
 	shadow = true,
-	additive = false,
-	outline = false,
-} )
-surface.CreateFont( "ltb24", {
-	font = "Trebuchet24",
-	size = 64,
-	weight = 500,
-	blursize = 0,
-	scanlines = 0,
-	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
-	shadow = true,
-	additive = false,
-	outline = false,
-} )
-
-surface.CreateFont( "spec_font1", {
-	font = "Default",
-	size = 64,
-	weight = 1000,
-	blursize = 0,
-	scanlines = 0,
-	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
-	shadow = false,
-	additive = false,
-	outline = false,
-} )
-
-surface.CreateFont( "spec_font2", {
-	font = "Default",
-	size = 16,
-	weight = 1000,
-	blursize = 0,
-	scanlines = 0,
-	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
-	shadow = false,
-	additive = false,
-	outline = false,
-} )
-
-surface.CreateFont( "esp_font", {
-	font = "CloseCaption_Bold",
-	size = 12,
-	weight = 550,
-	blursize = 0,
-	scanlines = 0,
-	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
-	shadow = false,
-	additive = false,
-	outline = false,
-} )
+})
 
 surface.CreateFont("pk_duelvsfont", {
 	font = "Verdana",
 	size = 48,
 	weight = 650,
-	antialias = true,
 	shadow = true,
 })
 
@@ -94,7 +16,6 @@ surface.CreateFont("pk_duelfont", {
 	font = "Verdana",
 	size = 32,
 	weight = 650,
-	antialias = true,
 	shadow = true,
 })
 
@@ -102,7 +23,6 @@ surface.CreateFont("pk_hudfont", {
 	font = "Verdana",
 	size = 24,
 	weight = 550,
-	antialias = true,
 	shadow = true,
 })
 
