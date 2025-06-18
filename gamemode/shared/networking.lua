@@ -7,7 +7,11 @@ PK.netCache = PK.netCache or {}
 PK.netProxies = PK.netProxies or {}
 
 function PK.GetNWVar(id, default)
-	return PK.netCache[id] or default
+	local value = PK.netCache[id]
+	if value != nil and default != nil and TypeID(value) != TypeID(default) then
+		error(string.format("type mismatch for '%s' default is '%s', but stored is '%s'", id, type(default), type(value)), 2)
+	end
+	return value or default
 end
 
 function PK.SetNWVarProxy(id, func)
@@ -20,7 +24,8 @@ end
 if SERVER then
 	function PK.SetNWVar(id, value)
 		if id == nil then return end
-		if PK.netCache[id] == value then return end
+		-- temporary workaround to just always network tables, until i write a deep compare func
+		if PK.netCache[id] == value and TypeID(value) != TYPE_TABLE then return end
 
 		if PK.netProxies[id] then
 			PK.netProxies[id](PK.netCache[id], value)

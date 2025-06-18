@@ -41,274 +41,113 @@ function GM:HUDShouldDraw(name)
 	return true
 end
 
-if duelhud then duelhud:Remove() end
-duelhud = vgui.Create("DPanel")
-function duelhud:PerformLayout()
-	self:SetSize(1000, 70)
-	self:SetPos(ScrW()/2 - (self:GetWide()/2), 0)
-end
-
-function duelhud:Paint(w, h)
-	if not IsValid(LocalPlayer()) then return end
-	//local target = IsValid(LocalPlayer():GetObserverTarget()) and LocalPlayer():GetObserverTarget() or LocalPlayer()
-
-	local kills = GetGlobalInt("kills", 0)
-	local player1 = GetGlobalEntity("player1", NULL)
-	local player2 = GetGlobalEntity("player2", NULL)
-
-	if not IsValid(player1) or not IsValid(player2) then return end
-
-	local p1score = player1:GetNWInt("duelscore", 0)
-	local p2score = player2:GetNWInt("duelscore", 0)
-
-	surface.SetDrawColor(80, 80, 80)
-	if p1score > p2score then surface.SetDrawColor(33, 101, 230) end
-	surface.DrawRect(0, 0, w/2, h)
-	
-	surface.SetDrawColor(80, 80, 80)
-	if p2score > p1score then surface.SetDrawColor(33, 101, 230) end
-	surface.DrawRect(w/2, 0, w/2, h)
-	
-	surface.SetDrawColor(48, 70, 120)
-	draw.NoTexture()
-	surface.DrawTexturedRectRotated(w/2-10, h, 80, 180, -15)
-	
-	draw.DrawText("vs", "pk_duelvsfont", w/2, 6, Color(255, 255, 255), TEXT_ALIGN_CENTER)
-	
-	draw.DrawText(player1:Nick() or "", "pk_duelfont", w/2-60, 10, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
-	draw.DrawText(player2:Nick() or "", "pk_duelfont", w/2+60, 10, Color(255, 255, 255), TEXT_ALIGN_LEFT)
-	
-	draw.DrawText(p1score, "pk_duelfont", 20, 8, Color(255, 255, 255), TEXT_ALIGN_LEFT)
-	draw.DrawText(p2score, "pk_duelfont", w-20, 8, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
-	
-	local width = math.floor((w-160)/2/kills)
-	
-	for i=1, kills do
-		if i <= p1score then
-			surface.SetDrawColor(255, 255, 255)
-		else
-			surface.SetDrawColor(50, 50, 50)
-		end
-
-		surface.DrawRect(w/2-60-width*i, 51, width-2, 5)
-		
-		if i <= p2score then
-			surface.SetDrawColor(255, 255, 255)
-		else
-			surface.SetDrawColor(50, 50, 50)
-		end
-		
-		surface.DrawRect(w/2+60+width*i-width, 51, width-2, 5)
-	end
-end
 
 local hudheight = 35
 local hudinset = 3
 
-if bottomhud then bottomhud:Remove() end
-bottomhud = vgui.Create("DIconLayout")
+if not IsValid(bottomhud) then
+	bottomhud = vgui.Create("DIconLayout")
+end
+bottomhud:ParentToHUD()
 bottomhud:SetSpaceX(hudinset)
 bottomhud:SetSize(ScrW(), hudheight)
 bottomhud:SetPos(hudinset, ScrH()-hudheight-hudinset)
-function bottomhud:Paint(w, h) end
-
-hook.Add("OnScreenSizeChanged", "hudupdate", function()
-	bottomhud:InvalidateLayout()
-	bottomhud:SetSize(ScrW(), hudheight)
-	bottomhud:SetPos(hudinset, ScrH()-hudheight-hudinset)
-	duelhud:InvalidateLayout()
-end)
-
-local leaderhud = bottomhud:Add("pk_hudelement")
-leaderhud:SetHeight(hudheight)
-leaderhud:SetFont("pk_hudfont")
-leaderhud:SetName("Leader")
-leaderhud:SetValue("nobody (0)")
-function leaderhud:Layout()
-	bottomhud:Layout()
+function bottomhud:OnScreenSizeChanged()
+	self:SetSize(ScrW(), hudheight)
+	self:SetPos(hudinset, ScrH()-hudheight-hudinset)
 end
-function leaderhud:SetLeader(ply, kills)
-	if not IsValid(ply) or not ply:IsPlayer() then
-		ply = NULL
-		kills = 0
-	end
 
-	self:SetValue(string.format("%s (%d)", IsValid(ply) and ply:Nick() or "nobody", kills))
-end
-leaderhud:SetLeader(PK.GetNWVar("streakleader", NULL), PK.GetNWVar("streakkills", 0))
-
-PK.SetNWVarProxy("streakleader", function(_, leader)
-	if not ispanel(leaderhud) then return end
-
-	leaderhud:SetLeader(leader, PK.GetNWVar("streakkills", 0))
-end)
-
-PK.SetNWVarProxy("streakkills", function(_, kills)
-	if not ispanel(leaderhud) then return end
-
-	leaderhud:SetLeader(PK.GetNWVar("streakleader", NULL), kills)
-end)
-
-PK.SetNWVarProxy("fighttimer", function(_, timeleft)
-	if timeleft == 0 then
-		if ispanel(timelefthud) then
-			timelefthud:Remove()
-			timelefthud = nil
-		end
-
-		return
-	end
-
-	if not IsValid(timelefthud) then
-		timelefthud = bottomhud:Add("pk_hudelement")
-		timelefthud:SetHeight(hudheight)
-		timelefthud:SetFont("pk_hudfont")
-		timelefthud:SetName("Time Remaining")
-		timelefthud:SetValue(PrettyTime(timeleft))
-		function timelefthud:Layout()
+PK.RegisterHudElement("infohud",
+	-- create
+	function(data)
+		local element = bottomhud:Add("pk_hudelement")
+		element:SetHeight(hudheight)
+		element:SetFont("pk_hudfont")
+		function element:Layout()
 			bottomhud:Layout()
 		end
-
-		return
+		
+		return element
+	end,
+	-- update
+	function(panel, data)
+		panel:SetName(PK.formatHudString(data.label))
+		panel:SetValue(PK.formatHudString(data.value))
 	end
+)
 
-	timelefthud:SetValue(PrettyTime(timeleft))
-end)
-
-PK.SetNWVarProxy("onesurfmode", function(_, enabled)
-	if not enabled then
-		if ispanel(onesurfhud) then
-			onesurfhud:Remove()
-			onesurfhud = nil
+PK.RegisterHudElement("duelhud",
+	-- create
+	function(data)
+		local duelhud = vgui.Create("DPanel")
+		duelhud:ParentToHUD()
+		function duelhud:PerformLayout()
+			self:SetSize(1000, 70)
+			self:SetPos(ScrW()/2 - (self:GetWide()/2), 0)
+		end
+		function duelhud:OnScreenSizeChanged()
+			self:InvalidateLayout()
 		end
 
-		return
-	end
+		function duelhud:Paint(w, h)
+			local kills = GetGlobal2Int("kills", 0)
+			local player1 = GetGlobal2Entity("player1", NULL)
+			local player2 = GetGlobal2Entity("player2", NULL)
 
-	if not IsValid(onesurfhud) then
-		onesurfhud = bottomhud:Add("pk_hudelement")
-		onesurfhud:SetHeight(hudheight)
-		onesurfhud:SetFont("pk_hudfont")
-		onesurfhud:SetName("Surfs")
-		onesurfhud:SetValue(tostring(LocalPlayer():GetNW2Int("PKSurfs", 0)))
-		function onesurfhud:Layout()
-			bottomhud:Layout()
-		end
+			if not IsValid(player1) or not IsValid(player2) then return end
 
-		LocalPlayer():SetNW2VarProxy("PKSurfs", function(ent, name, old, new)
-			if not ispanel(onesurfhud) then return end
+			local p1score = player1:GetNW2Int("duelscore", 0)
+			local p2score = player2:GetNW2Int("duelscore", 0)
+
+			surface.SetDrawColor(80, 80, 80)
+			if p1score > p2score then surface.SetDrawColor(33, 101, 230) end
+			surface.DrawRect(0, 0, w/2, h)
 			
-			onesurfhud:SetValue(tostring(new))
-		end)
-
-		return
-	end
-end)
-
-PK.SetNWVarProxy("liveshud", function(_, enabled)
-	if not enabled then
-		if ispanel(liveshud) then
-			liveshud:Remove()
-			liveshud = nil
-			hook.Remove("PK_ObserverTargetChanged", "spectating lives left")
-
-			-- hacky way to remove proxy cos theres no remove proxy func
-			for k, ply in next, player.GetAll() do
-				if ply.NWVarProxies then
-					ply.NWVarProxies["livesleft"] = nil
+			surface.SetDrawColor(80, 80, 80)
+			if p2score > p1score then surface.SetDrawColor(33, 101, 230) end
+			surface.DrawRect(w/2, 0, w/2, h)
+			
+			surface.SetDrawColor(48, 70, 120)
+			draw.NoTexture()
+			surface.DrawTexturedRectRotated(w/2-10, h, 80, 180, -15)
+			
+			draw.DrawText("vs", "pk_duelvsfont", w/2, 6, Color(255, 255, 255), TEXT_ALIGN_CENTER)
+			
+			draw.DrawText(player1:Nick(), "pk_duelfont", w/2-60, 10, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
+			draw.DrawText(player2:Nick(), "pk_duelfont", w/2+60, 10, Color(255, 255, 255), TEXT_ALIGN_LEFT)
+			
+			draw.DrawText(p1score, "pk_duelfont", 20, 8, Color(255, 255, 255), TEXT_ALIGN_LEFT)
+			draw.DrawText(p2score, "pk_duelfont", w-20, 8, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
+			
+			local width = math.floor((w-160)/2/kills)
+			
+			for i=1, kills do
+				if i <= p1score then
+					surface.SetDrawColor(255, 255, 255)
+				else
+					surface.SetDrawColor(50, 50, 50)
 				end
+
+				surface.DrawRect(w/2-60-width*i, 51, width-2, 5)
+				
+				if i <= p2score then
+					surface.SetDrawColor(255, 255, 255)
+				else
+					surface.SetDrawColor(50, 50, 50)
+				end
+				
+				surface.DrawRect(w/2+60+width*i-width, 51, width-2, 5)
 			end
 		end
 
-		return
+		return duelhud
+	end,
+	-- update
+	function(panel, data)
 	end
+)
 
-	if not IsValid(liveshud) then
-		liveshud = bottomhud:Add("pk_hudelement")
-		liveshud:SetHeight(hudheight)
-		liveshud:SetFont("pk_hudfont")
-		liveshud:SetName("Lives")
-		liveshud:SetValue(tostring(LocalPlayer():GetNW2Int("livesleft", 0)))
-		function liveshud:Layout()
-			bottomhud:Layout()
-		end
-
-		LocalPlayer():SetNW2VarProxy("livesleft", function(ent, name, old, new)
-			if not ispanel(liveshud) then return end
-			
-			liveshud:SetValue(tostring(new))
-		end)
-
-		hook.Add("PK_ObserverTargetChanged", "spectating lives left", function(target)
-			if not ispanel(liveshud) then return end
-			if not IsValid(target) or not target:IsPlayer() then return end
-
-			target:SetNW2VarProxy("livesleft", function(ent, name, old, new)
-				if not ispanel(liveshud) then return end
-				if ent != LocalPlayer():GetObserverTarget() then return end
-				
-				liveshud:SetValue(tostring(new))
-			end)
-			
-			liveshud:SetValue(tostring(target:GetNW2Int("livesleft", 0)))
-		end)
-
-		return
-	end
-end)
-
-PK.SetNWVarProxy("timelefthud", function(_, enabled)
-	if not enabled then
-		if ispanel(timehud) then
-			timehud:Remove()
-			timehud = nil
-			hook.Remove("PK_ObserverTargetChanged", "spectating time left")
-
-			-- hacky way to remove proxy cos theres no remove proxy func
-			for k, ply in next, player.GetAll() do
-				if ply.NWVarProxies then
-					ply.NWVarProxies["timeleft"] = nil
-				end
-			end
-		end
-
-		return
-	end
-
-	if not IsValid(timehud) then
-		timehud = bottomhud:Add("pk_hudelement")
-		timehud:SetHeight(hudheight)
-		timehud:SetFont("pk_hudfont")
-		timehud:SetName("Time")
-		timehud:SetValue(PrettyTime(LocalPlayer():GetNW2Float("timeleft", 0)))
-		function timehud:Layout()
-			bottomhud:Layout()
-		end
-
-		LocalPlayer():SetNW2VarProxy("timeleft", function(ent, name, old, new)
-			if not ispanel(timehud) then return end
-			
-			timehud:SetValue(PrettyTime(new))
-		end)
-
-		hook.Add("PK_ObserverTargetChanged", "spectating time left", function(target)
-			if not ispanel(timehud) then return end
-			if not IsValid(target) or not target:IsPlayer() then return end
-
-			target:SetNW2VarProxy("timeleft", function(ent, name, old, new)
-				if not ispanel(timehud) then return end
-				if ent != LocalPlayer():GetObserverTarget() then return end
-				
-				timehud:SetValue(PrettyTime(new))
-			end)
-			
-			timehud:SetValue(PrettyTime(LocalPlayer():GetNW2Float("timeleft", 0)))
-		end)
-
-		return
-	end
-end)
-
+-- todo: port this to server side
 hook.Add("PK_ObserverTargetChanged", "spechud", function(target)
 	if not IsValid(target) then
 		if ispanel(spectatorhud) then

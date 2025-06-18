@@ -7,6 +7,8 @@
 ------------------------------------------*/
 
 include("shared.lua")
+include("shared/entity.lua")
+include("shared/networking.lua")
 include("server/player.lua")
 include("server/entity.lua")
 include("server/base.lua")
@@ -14,8 +16,6 @@ include("server/spectating.lua")
 include("server/events.lua")
 include("server/antilag.lua")
 include("server/challonge.lua")
-include("shared/entity.lua")
-include("shared/networking.lua")
 
 // events
 include("events/duels.lua")
@@ -36,6 +36,7 @@ include("modifiers/landmine.lua")
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 AddCSLuaFile("client/duels.lua")
+AddCSLuaFile("client/hudmanager.lua")
 AddCSLuaFile("client/hud.lua")
 AddCSLuaFile("client/hax.lua")
 AddCSLuaFile("client/derma.lua")

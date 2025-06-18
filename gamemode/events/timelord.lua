@@ -68,16 +68,21 @@ end)
 
 event:OnSetup(function(time, timesteal)
 	event.timesteal = timesteal
+
 	for k, ply in next, event.players do
 		ply.battling = true
 		ply:SetNW2Float("timeleft", time)
 	end
 
-	PK.SetNWVar("timelefthud", true)
+	PK.AddHud("timeleft", {
+		style = "infohud",
+		label = "Time Left",
+		value = { "%T", "p:timeleft" },
+	})
 
 	ChatMsg({
 		Color(0,120,255), event.name,
-		Color(255,255,255), " event with " .. time .. (time == 1 and " second" or " seconds") .. " starting time and " .. timesteal .. " seconds of timesteal starting...",
+		Color(255,255,255), " event with " .. PrettyTime(time) .. " starting time and " .. PrettyTime(timesteal) .. " of timesteal starting...",
 	})
 end)
 
@@ -126,7 +131,7 @@ event:OnCleanup(function()
 		v.battling = nil
 	end
 
-	PK.SetNWVar("timelefthud", false)
+	PK.RemoveHud("timeleft")
 end)
 
 concommand.Add("timelord", function(ply, cmd, args, str)

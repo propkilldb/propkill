@@ -19,21 +19,20 @@ event:Hook("PlayerDeath", "PK_duel_KillCounter", function(ply, inflictor, attack
 	local opponent = ply.opponent
 	if not IsValid(opponent) then return end
 
-	opponent:SetNWInt("duelscore", opponent:GetNWInt("duelscore", 0) + 1)
+	opponent:SetNW2Int("duelscore", opponent:GetNW2Int("duelscore", 0) + 1)
 
-	if opponent:GetNWInt("duelscore", 0) == GetGlobalInt("kills", 10) then
+	if opponent:GetNW2Int("duelscore", 0) == GetGlobal2Int("kills", 10) then
 		event:End()
 	end
 end)
 
 timer.Create("duel_update_timer", 1, 0, function()
 	if not timer.Exists("fighttimer") then
-		PK.SetNWVar("fighttimer", 0)
 		return
 	end
 
 	local timeleft = math.abs(timer.TimeLeft("fighttimer")) -- timeleft is negative while paused
-	PK.SetNWVar("fighttimer", timeleft)
+	SetGlobal2Int("fighttimer", timeleft)
 
 	if (event.time or 0) > 1 then
 		if not event.timeleftOneMin and timeleft <= 61 then
@@ -113,6 +112,11 @@ function InvitePlayerToDuel(fighter, fightee, kills, time, ranked)
 	}
 	fighter.PKDuelInvite = fightdata
 
+	if fighter:IsSuperAdmin() and fightee:IsBot() then
+		AcceptDuel(fighter, fightee)
+		return
+	end
+
 	net.Start("pk_duelinvite")
 		net.WriteEntity(fighter)
 		net.WriteInt(kills, 8)
@@ -169,13 +173,13 @@ event:OnSetup(function(ply1, ply2, kills, time, ranked)
 	ply1.opponent = ply2
 	ply2.opponent = ply1
 
-	SetGlobalInt("kills", kills)
-	SetGlobalEntity("player1", ply1)
-	SetGlobalEntity("player2", ply2)
-	SetGlobalBool("ranked", ranked)
+	SetGlobal2Int("kills", kills)
+	SetGlobal2Entity("player1", ply1)
+	SetGlobal2Entity("player2", ply2)
+	SetGlobal2Bool("ranked", ranked)
 
-	ply1:SetNWInt("duelscore", 0)
-	ply2:SetNWInt("duelscore", 0)
+	ply1:SetNW2Int("duelscore", 0)
+	ply2:SetNW2Int("duelscore", 0)
 
 	ply1:StopSpectating(true)
 	ply2:StopSpectating(true)
@@ -191,6 +195,18 @@ event:OnSetup(function(ply1, ply2, kills, time, ranked)
 		Color(255,255,255), " to " .. kills .. " kills in under " .. time .. " minutes"
 	})
 
+	SetGlobal2Int("fighttimer", time*60)
+
+	PK.AddHud("timeleft", {
+		style = "infohud",
+		label = "Time Left",
+		value = { "%T", "g:fighttimer" },
+	})
+
+	PK.AddHud("duelhud", {
+		style = "duelhud"
+	})
+
 	return true
 end)
 
@@ -198,20 +214,18 @@ event:OnGameStart(function()
 	timer.Create("fighttimer", event.time*60, 1, function()
 		event:End()
 	end)
-
-	PK.SetNWVar("fighttimer", timer.TimeLeft("fighttimer"))
 end)
 
 event:OnGameEnd(function(forfeitply)
 	timer.Remove("fighttimer")
 
-	local ply1 = GetGlobalEntity("player1")
-	local ply2 = GetGlobalEntity("player2")
+	local ply1 = GetGlobal2Entity("player1")
+	local ply2 = GetGlobal2Entity("player2")
 
 	if not IsValid(ply1) or not IsValid(ply2) then return end
 
-	local p1kills = ply1:GetNWInt("duelscore", 0)
-	local p2kills = ply2:GetNWInt("duelscore", 0)
+	local p1kills = ply1:GetNW2Int("duelscore", 0)
+	local p2kills = ply2:GetNW2Int("duelscore", 0)
 
 	local winner = p1kills > p2kills and ply1 or ply2
 	local loser = p1kills < p2kills and ply1 or ply2
@@ -235,7 +249,7 @@ event:OnGameEnd(function(forfeitply)
 		Color(0,120,255), winner:Nick(),
 		Color(255,255,255), " " .. result .. " a duel against ",
 		Color(0,120,255), loser:Nick(),
-		Color(255,255,255), " " .. winner:GetNWInt("duelscore", 0) .. "-" .. loser:GetNWInt("duelscore", 0)
+		Color(255,255,255), " " .. winner:GetNW2Int("duelscore", 0) .. "-" .. loser:GetNW2Int("duelscore", 0)
 	}
 
 	if IsValid(forfeitply) then
@@ -250,8 +264,10 @@ event:OnGameEnd(function(forfeitply)
 end)
 
 event:OnCleanup(function()
-	SetGlobalEntity("player1", NULL)
-	SetGlobalEntity("player2", NULL)
+	SetGlobal2Entity("player1", NULL)
+	SetGlobal2Entity("player2", NULL)
+	PK.RemoveHud("timeleft")
+	PK.RemoveHud("duelhud")
 
 	GetConVar("sbox_maxprops"):SetInt(event.originalMaxProps)
 

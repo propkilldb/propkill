@@ -88,6 +88,16 @@ concommand.Add("onesurf", function(ply, cmd, args, str)
 		Color(255,255,255), (PK.GetNWVar("onesurfmode", false) and "enabled" or "disabled"),
 	})
 
+	if PK.GetNWVar("onesurfmode", false) then
+		PK.AddHud("onesurf", {
+			style = "infohud",
+			label = "Surfs",
+			value = { "%d", "p:PKSurfs" },
+		})
+	else
+		PK.RemoveHud("onesurf")
+	end
+
 	for k,v in next, player.GetAll() do 
 		v:SetNW2Int("PKSurfs", 1)
 	end

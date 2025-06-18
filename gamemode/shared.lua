@@ -41,11 +41,23 @@ hook.Add("ShouldCollide", "noteamcollide", function(ent, ent2)
 end)
 
 function PrettyTime(seconds)
-	local timestr = ""
+	seconds = math.floor(tonumber(seconds) or 0)
+	local parts = {}
 
-	if seconds >= 60 then
-		timestr = string.NiceTime(seconds) .. ", "
+	local hours = math.floor(seconds / 3600)
+	if hours > 0 then
+		table.insert(parts, string.NiceTime(hours * 3600))
 	end
-	
-	return timestr .. string.NiceTime(seconds % 60)
+
+	local minutes = math.floor((seconds % 3600) / 60)
+	if minutes > 0 then
+		table.insert(parts, string.NiceTime(minutes * 60))
+	end
+
+	local secs = seconds % 60
+	if secs > 0 or #parts == 0 then
+		table.insert(parts, string.NiceTime(secs))
+	end
+
+	return table.concat(parts, ", ")
 end

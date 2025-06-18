@@ -21,7 +21,6 @@ local function CheckRemainingPlayers()
 end
 
 event:Hook("PlayerDeath", "kick dead noob out to spectator", function(ply)
-	print("is player death calling when u kick??")
 	ply.lives = (ply.lives or 1) - 1
 	ply:SetNW2Int("livesleft", ply.lives)
 
@@ -56,7 +55,11 @@ event:OnSetup(function(lives)
 		ply:SetNW2Int("livesleft", lives)
 	end
 
-	PK.SetNWVar("liveshud", true)
+	PK.AddHud("lives", {
+		style = "infohud",
+		label = "Lives",
+		value = { "%d", "p:livesleft" },
+	})
 
 	ChatMsg({
 		Color(0,120,255), "Last Man Standing",
@@ -94,7 +97,7 @@ event:OnCleanup(function()
 		v.battling = false
 	end
 
-	PK.SetNWVar("liveshud", false)
+	PK.RemoveHud("lives")
 end)
 
 concommand.Add("lastmanstanding", function(ply, cmd, args, str)

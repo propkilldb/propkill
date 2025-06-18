@@ -212,13 +212,13 @@ function PANEL:Init()
 	player1ManagementPanel:Dock(LEFT)
 	function player1ManagementPanel:Paint() end
 	AddPanelTitle(player1ManagementPanel, "Player 1 Management")
-	CreatePlayerManagementControlSection(self, player1ManagementPanel, "1", function() return GetGlobalEntity("player1", NULL) end)
+	CreatePlayerManagementControlSection(self, player1ManagementPanel, "1", function() return GetGlobal2Entity("player1", NULL) end)
 
 	local player2ManagementPanel = vgui.Create("DPanel", playerManagementContainer)
 	player2ManagementPanel:Dock(FILL)
 	function player2ManagementPanel:Paint() end
 	AddPanelTitle(player2ManagementPanel, "Player 2 Management")
-	CreatePlayerManagementControlSection(self, player2ManagementPanel, "2", function() return GetGlobalEntity("player2", NULL) end)
+	CreatePlayerManagementControlSection(self, player2ManagementPanel, "2", function() return GetGlobal2Entity("player2", NULL) end)
 	
 	function playerManagementContainer:PerformLayout(w,h)
 		if IsValid(player1ManagementPanel) then
@@ -258,12 +258,12 @@ function PANEL:RefreshData()
 		self.player2select:AddChoice(ply:Nick(), ply)
 	end
 
-	local p1 = GetGlobalEntity("player1", NULL)
+	local p1 = GetGlobal2Entity("player1", NULL)
 	if IsValid(self.p1NameLabel) then
 		self.p1NameLabel:SetText("Player 1: " .. (IsValid(p1) and p1:Nick() or "N/A"))
 	end
 
-	local p2 = GetGlobalEntity("player2", NULL)
+	local p2 = GetGlobal2Entity("player2", NULL)
 	if IsValid(self.p2NameLabel) then
 		self.p2NameLabel:SetText("Player 2: " .. (IsValid(p2) and p2:Nick() or "N/A"))
 	end

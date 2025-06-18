@@ -30,20 +30,20 @@ event:Hook("PlayerDeath", "PK_duel_KillCounter", function(ply, inflictor, attack
 	local opponent = ply.opponent
 	if not IsValid(opponent) then return end
 
-	opponent:SetNWInt("duelscore", opponent:GetNWInt("duelscore", 0) + 1)
+	opponent:SetNW2Int("duelscore", opponent:GetNW2Int("duelscore", 0) + 1)
 
-	if opponent:GetNWInt("duelscore", 0) >= GetGlobalInt("kills", 10) then
+	if opponent:GetNW2Int("duelscore", 0) >= GetGlobal2Int("kills", 10) then
 		event:End()
 		return
 	end
 
 	if event.matchid and event.matchid != 0 then
-		local player1 = GetGlobalEntity("player1")
-		local player2 = GetGlobalEntity("player2")
+		local player1 = GetGlobal2Entity("player1")
+		local player2 = GetGlobal2Entity("player2")
 
 		ChallongeAPIPut("matches/" .. event.matchid, {
 			match = {
-				scores_csv = string.format("%s-%s", player1:GetNWInt("duelscore", 0), player2:GetNWInt("duelscore", 0))
+				scores_csv = string.format("%s-%s", player1:GetNW2Int("duelscore", 0), player2:GetNW2Int("duelscore", 0))
 			}
 		})
 	end
@@ -51,19 +51,18 @@ end)
 
 timer.Create("tournament_update_timer", 1, 0, function()
 	if not timer.Exists("fighttimer") then
-		PK.SetNWVar("fighttimer", 0)
 		return
 	end
 
 	local timeleft = math.abs(timer.TimeLeft("fighttimer")) -- timeleft is negative while paused
-	PK.SetNWVar("fighttimer", timeleft)
+	SetGlobal2Int("fighttimer", timeleft)
 
 	if (event.time or 0) > 1 then
 		if not event.timeleftOneMin and timeleft <= 61 then
 			event.timeleftOneMin = true
 
 			ChatMsg({
-				Color(0, 120, 255), "Duel",
+				Color(255,0,0), "[Tournament]",
 				Color(255, 255, 255), ": 1 minute remaining!"
 			})
 		end
@@ -72,7 +71,7 @@ timer.Create("tournament_update_timer", 1, 0, function()
 			event.timeleftTenSec = true
 
 			ChatMsg({
-				Color(0, 120, 255), "Duel",
+				Color(255,0,0), "[Tournament]",
 				Color(255, 255, 255), ": 10 seconds remaining!"
 			})
 		end
@@ -98,12 +97,12 @@ event:OnSetup(function(ply1, ply2, kills, time, disableAlltalk, matchid)
 	ply1.opponent = ply2
 	ply2.opponent = ply1
 
-	SetGlobalInt("kills", kills)
-	SetGlobalEntity("player1", ply1)
-	SetGlobalEntity("player2", ply2)
+	SetGlobal2Int("kills", kills)
+	SetGlobal2Entity("player1", ply1)
+	SetGlobal2Entity("player2", ply2)
 
-	ply1:SetNWInt("duelscore", 0)
-	ply2:SetNWInt("duelscore", 0)
+	ply1:SetNW2Int("duelscore", 0)
+	ply2:SetNW2Int("duelscore", 0)
 
 	ply1:StopSpectating(true)
 	ply2:StopSpectating(true)
@@ -119,6 +118,18 @@ event:OnSetup(function(ply1, ply2, kills, time, disableAlltalk, matchid)
 		Color(255,255,255), " and ",
 		Color(0,120,255), ply2:Nick(),
 		Color(255,255,255), " to " .. kills .. " kills in under " .. time .. " minutes"
+	})
+
+	SetGlobal2Int("fighttimer", time*60)
+
+	PK.AddHud("timeleft", {
+		style = "infohud",
+		label = "Time Left",
+		value = { "%T", "g:fighttimer" },
+	})
+
+	PK.AddHud("duelhud", {
+		style = "duelhud"
 	})
 
 	if event.matchid and event.matchid != 0 then
@@ -139,13 +150,10 @@ event:OnGameStart(function()
 	timer.Create("fighttimer", event.time*60, 1, function()
 		event:End()
 	end)
-
-	PK.SetNWVar("fighttimer", timer.TimeLeft("fighttimer"))
 end)
 
 event:OnGameEnd(function(forfeitply)
 	timer.Remove("fighttimer")
-	PK.SetNWVar("fighttimer", 0)
 	event.matchPaused = false
 
 	if event.originalAlltalkValue != nil then
@@ -153,13 +161,13 @@ event:OnGameEnd(function(forfeitply)
 		event.originalAlltalkValue = nil
 	end
 
-	local ply1 = GetGlobalEntity("player1")
-	local ply2 = GetGlobalEntity("player2")
+	local ply1 = GetGlobal2Entity("player1")
+	local ply2 = GetGlobal2Entity("player2")
 
 	if not IsValid(ply1) or not IsValid(ply2) then return end
 
-	local p1kills = ply1:GetNWInt("duelscore", 0)
-	local p2kills = ply2:GetNWInt("duelscore", 0)
+	local p1kills = ply1:GetNW2Int("duelscore", 0)
+	local p2kills = ply2:GetNW2Int("duelscore", 0)
 
 	local winner = p1kills > p2kills and ply1 or ply2
 	local loser = p1kills < p2kills and ply1 or ply2
@@ -192,7 +200,7 @@ event:OnGameEnd(function(forfeitply)
 		Color(0,120,255), winner:Nick(),
 		Color(255,255,255), " " .. result .. " the match against ",
 		Color(0,120,255), loser:Nick(),
-		Color(255,255,255), " " .. winner:GetNWInt("duelscore", 0) .. "-" .. loser:GetNWInt("duelscore", 0)
+		Color(255,255,255), " " .. winner:GetNW2Int("duelscore", 0) .. "-" .. loser:GetNW2Int("duelscore", 0)
 	}
 
 	if IsValid(forfeitply) then
@@ -207,8 +215,10 @@ event:OnGameEnd(function(forfeitply)
 end)
 
 event:OnCleanup(function()
-	SetGlobalEntity("player1", NULL)
-	SetGlobalEntity("player2", NULL)
+	SetGlobal2Entity("player1", NULL)
+	SetGlobal2Entity("player2", NULL)
+	PK.RemoveHud("timeleft")
+	PK.RemoveHud("duelhud")
 	GetConVar("sbox_maxprops"):SetInt(event.originalMaxProps)
 
 	-- have to do cleanup cos the event table gets reused, for now
@@ -244,8 +254,8 @@ net.Receive("pk_tournamentduel", function(len, ply)
 
 	local success, reason = event:Start(opponent1, opponent2, kills, time, disableAlltalk, matchid)
 	if success then
-		opponent1:SetNWInt("duelscore", p1startscore)
-		opponent2:SetNWInt("duelscore", p2startscore)
+		opponent1:SetNW2Int("duelscore", p1startscore)
+		opponent2:SetNW2Int("duelscore", p2startscore)
 	else
 		if ply:IsPlayer() then
 			ChatMsg(ply, {Color(255,0,0), "[Tournament] ", Color(255,255,255), "Failed to start duel: " .. (reason or "Unknown error")})
@@ -335,7 +345,7 @@ net.Receive("pk_duel_adjust_time", function(len, ply)
 			timer.Adjust("fighttimer", newTargetDelay)
 		end
 		
-		PK.SetNWVar("fighttimer", newTargetDelay)
+		SetGlobal2Int("fighttimer", newTargetDelay)
 
 		local action = timeAdjustment >= 0 and "added to" or "removed from"
 		local absTime = math.abs(timeAdjustment)
@@ -352,17 +362,17 @@ net.Receive("pk_duel_adjust_score", function(len, ply)
 	local scoreAdjustment = net.ReadInt(8)
 	if not (IsValid(targetPly) and targetPly:IsPlayer()) then return end
 
-	local oldScore = targetPly:GetNWInt("duelscore", 0)
+	local oldScore = targetPly:GetNW2Int("duelscore", 0)
 	local newScore = math.max(0, oldScore + scoreAdjustment)
 
-	targetPly:SetNWInt("duelscore", newScore)
+	targetPly:SetNW2Int("duelscore", newScore)
 	
 	local action = scoreAdjustment >= 0 and "added to" or "removed from"
 	local absScore = math.abs(scoreAdjustment)
 
 	ChatMsg({Color(255,0,0),"[Tournament] ", Color(255,255,255), absScore .. " point(s) " .. action .. " ", Color(0,120,255), targetPly:Nick()})
 
-	if targetPly:GetNWInt("duelscore", 0) >= GetGlobalInt("kills", 10) then
+	if targetPly:GetNW2Int("duelscore", 0) >= GetGlobal2Int("kills", 10) then
 		event:End()
 	end
 end)

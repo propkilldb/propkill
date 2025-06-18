@@ -193,8 +193,8 @@ function ResetKillstreak()
 		v.PKStreak = 0
 	end
 
-	PK.SetNWVar("streakleader", NULL)
-	PK.SetNWVar("streakkills", 0)
+	SetGlobal2Entity("streakleader", NULL)
+	SetGlobal2Int("streakkills", 0)
 end
 
 function GetHighestKillStreak()
@@ -216,11 +216,11 @@ end
 local function RemoveLeader(ply)
 	ply.PKStreak = 0
 
-	if ply == PK.GetNWVar("streakleader", NULL) then
+	if ply == GetGlobal2Entity("streakleader", NULL) then
 		local leader, kills = GetHighestKillStreak()
 
-		PK.SetNWVar("streakleader", ply)
-		PK.SetNWVar("streakkills", kills)
+		SetGlobal2Entity("streakleader", leader)
+		SetGlobal2Int("streakkills", kills)
 	end
 end
 
@@ -248,17 +248,17 @@ function GM:PlayerDeath(ply, inflictor, attacker)
 	local updateLeader = false
 
 	-- if it was the leader who died, find the next highest streak
-	if PK.GetNWVar("streakleader", NULL) == ply then
+	if GetGlobal2Entity("streakleader", NULL) == ply then
 		local leader, kills = GetHighestKillStreak()
 
-		PK.SetNWVar("streakleader", leader)
-		PK.SetNWVar("streakkills", kills)
+		SetGlobal2Entity("streakleader", leader)
+		SetGlobal2Int("streakkills", kills)
 	end
 
 	-- if the attackers kills are higher than the current leader, make them the new leader
-	if attacker.PKStreak > PK.GetNWVar("streakkills", 0) then
-		PK.SetNWVar("streakleader", attacker)
-		PK.SetNWVar("streakkills", attacker.PKStreak)
+	if attacker.PKStreak > GetGlobal2Int("streakkills", 0) then
+		SetGlobal2Entity("streakleader", attacker)
+		SetGlobal2Int("streakkills", attacker.PKStreak)
 	end
 
 	ply:LastStand()
@@ -354,6 +354,24 @@ function GM:GetFallDamage()
 	// disable fall crunch
 	return 0
 end
+
+function PK.AddHud(id, data)
+	local hudstate = PK.GetNWVar("hudstate", {})
+	hudstate[id] = data
+	PK.SetNWVar("hudstate", hudstate)
+end
+
+function PK.RemoveHud(id)
+	local hudstate = PK.GetNWVar("hudstate", {})
+	hudstate[id] = nil
+	PK.SetNWVar("hudstate", hudstate)
+end
+
+PK.AddHud("leader", {
+	style = "infohud",
+	label = "Leader",
+	value = { "%p (%d)", "g:streakleader", "g:streakkills" },
+})
 
 util.AddNetworkString("pk_teamselect")
 util.AddNetworkString("pk_helpmenu")

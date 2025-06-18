@@ -24,10 +24,10 @@ event:Hook("PlayerDeath", "select next duelist", function(ply1)
 
 	local ply2 = ply1.opponent
 
-	//ply1:SetNWInt("duelscore", 0)
-	ply2:SetNWInt("duelscore", ply2:GetNWInt("duelscore", 0) + 1)
+	//ply1:SetNW2Int("duelscore", 0)
+	ply2:SetNW2Int("duelscore", ply2:GetNW2Int("duelscore", 0) + 1)
 
-	if ply2:GetNWInt("duelscore", 0) == GetGlobalInt("kills", 8) then
+	if ply2:GetNW2Int("duelscore", 0) == GetGlobal2Int("kills", 8) then
 		event:End(ply2)
 		return
 	end
@@ -52,15 +52,15 @@ function SpawnNextDuelist(opponent)
 		return SpawnNextDuelist(opponent)
 	end
 
-	//ply:SetNWInt("duelscore", 0)
+	//ply:SetNW2Int("duelscore", 0)
 	ply.dueling = true
 	ply.opponent = opponent
 	opponent.opponent = ply
 
-	if not GetGlobalEntity("player1", NULL).dueling then
-		SetGlobalEntity("player1", ply)
+	if not GetGlobal2Entity("player1", NULL).dueling then
+		SetGlobal2Entity("player1", ply)
 	else
-		SetGlobalEntity("player2", ply)
+		SetGlobal2Entity("player2", ply)
 	end
 
 	timer.Simple(1, function()
@@ -130,12 +130,12 @@ event:OnSetup(function(kills)
 	ply1:Spawn()
 	ply2:Spawn()
 
-	SetGlobalInt("kills", kills)
-	SetGlobalEntity("player1", ply1)
-	SetGlobalEntity("player2", ply2)
+	SetGlobal2Int("kills", kills)
+	SetGlobal2Entity("player1", ply1)
+	SetGlobal2Entity("player2", ply2)
 
 	for k,v in next, event.players do
-		v:SetNWInt("duelscore", 0)
+		v:SetNW2Int("duelscore", 0)
 		
 		if v.dueling then continue end
 
@@ -148,6 +148,10 @@ event:OnSetup(function(kills)
 	local maxprops = GetConVar("sbox_maxprops")
 	event.originalMaxProps = maxprops:GetInt()
 	maxprops:SetInt(4)
+
+	PK.AddHud("duelhud", {
+		style = "duelhud"
+	})
 
 	ChatMsg({
 		Color(255,255,255), "Starting ",
@@ -175,7 +179,7 @@ event:OnGameEnd(function(winner)
 		ChatMsg({
 			Color(0,120,255), winner:Nick(),
 			Color(255,255,255), " has proven he is the best propkiller by winning the Duel Master event to ",
-			Color(0,120,255), tostring(GetGlobalInt("kills", 10)),
+			Color(0,120,255), tostring(GetGlobal2Int("kills", 10)),
 			Color(255,255,255), " kills"
 		})
 	else
@@ -187,8 +191,9 @@ event:OnGameEnd(function(winner)
 end)
 
 event:OnCleanup(function()
-	SetGlobalEntity("player1", NULL)
-	SetGlobalEntity("player2", NULL)
+	SetGlobal2Entity("player1", NULL)
+	SetGlobal2Entity("player2", NULL)
+	PK.RemoveHud("duelhud")
 
 	for k, ply in next, event.players do
 		ply.dueling = false
