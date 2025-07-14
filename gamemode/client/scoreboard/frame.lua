@@ -75,8 +75,12 @@ local menutabs = {
 	{
 		name = "Director",
 		panel = include("director.lua"),
-		condition = function() return GetConVarString("pk_challonge_id") != "" and LocalPlayer():IsAdmin() end,
+		condition = function() return GetConVarString("pk_challonge_id") != "" and LocalPlayer():IsSuperAdmin() end,
 		icon = "icon16/shield.png"
+	},
+	{
+		name = "Settings",
+		panel = include("settings.lua")
 	},
 	//{name = "Leaderboard", panel = include("leaderboard.lua")},
 	//{name = "Settings", panel = include("settings.lua")},
