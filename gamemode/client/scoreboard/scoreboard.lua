@@ -94,7 +94,6 @@ end
 
 function PANEL:RefreshData()
 	self:RefreshScoreboard()
-	self:RefreshArenas()
 end
 
 function PANEL:RefreshScoreboard()
@@ -245,42 +244,6 @@ function PANEL:RefreshScoreboard()
 			self:SizeToChildren(true, true)
 		end
 
-	end
-end
-
-function PANEL:RefreshArenas()
-	if not IsValid(self.arenas) then return end
-
-	for k,v in pairs(self.arenas.Panels) do
-		v:Remove()
-	end
-
-	for k,v in pairs(table.Merge({global = {name = "Global", players = {1}}}, PK.arenas)) do
-		if table.Count(v.players) < 1 then continue end
-
-		local arenabtn = vgui.Create("DButton", self.arenas)
-		arenabtn:DockMargin(0,0,4,0)
-		arenabtn:Dock(LEFT)
-		arenabtn:SetFont("pk_playerfont")
-		arenabtn:SetText(v.name or "")
-		arenabtn:SetWidth(arenabtn:GetTextSize() + 20)
-		arenabtn:SetTextColor(PK.colors.text)
-		arenabtn.arenaid = k
-		function arenabtn:Paint(w, h)
-			local col = PK.colors.primary
-			if LocalPlayer():GetNWString("arena") == self.arenaid then
-				col = PK.colors.secondary
-			elseif PK.selectedarena == self.arenaid then
-				col = PK.colors.primaryDark
-			end
-			draw.RoundedBox(4, 0, 0, w, h, col)
-		end
-		arenabtn.DoClick = function(this)
-			PK.selectedarena = this.arenaid
-			self:RefreshScoreboard()
-		end
-
-		self.arenas:AddPanel(arenabtn)
 	end
 end
 
