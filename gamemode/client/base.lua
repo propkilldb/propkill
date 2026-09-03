@@ -1,4 +1,5 @@
 local spectateFOV = CreateClientConVar("spectate_fov", 100, true, false, "Sets your FOV while spectating another player", 10, 170)
+CreateClientConVar("pk_luaphysgun", "1", true, true, "Enable lua physgun (requires respawn)")
 
 // lower their interpolation to 20ms, 100ms is too high for propkill
 local interp = GetConVar("cl_interp")

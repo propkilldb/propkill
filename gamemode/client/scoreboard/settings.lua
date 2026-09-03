@@ -17,17 +17,6 @@ function PANEL:Init()
 	bindrow:Dock(TOP)
 	function bindrow:Paint() end
 
-	local visuals = vgui.Create("DButton", bindrow)
-	visuals:SetText("Toggle visuals")
-	visuals:SetConsoleCommand("pk_visuals")
-	visuals:SizeToContentsX(20)
-	visuals:SizeToContentsY(10)
-	visuals:Dock(LEFT)
-
-	local bindrow = vgui.Create("DPanel", self)
-	bindrow:Dock(TOP)
-	function bindrow:Paint() end
-
 	local wheelspeed = vgui.Create("DNumSlider", bindrow)
 	wheelspeed:SetSize(500, 100)
 	wheelspeed:Dock(LEFT)
@@ -36,7 +25,26 @@ function PANEL:Init()
 	wheelspeed:SetMax(200)
 	wheelspeed:SetDecimals(0)
 	wheelspeed:SetConVar("physgun_wheelspeed")
-	
+
+	local bindrow = vgui.Create("DPanel", self)
+	bindrow:Dock(TOP)
+	function bindrow:Paint() end
+
+	local mscheck = vgui.Create("DCheckBoxLabel", bindrow)
+	mscheck:SetText("Enable mingscript")
+	mscheck:SetConVar("ms_enable")
+	mscheck:SizeToContents()
+	mscheck:Dock(LEFT)
+
+	local bindrow = vgui.Create("DPanel", self)
+	bindrow:Dock(TOP)
+	function bindrow:Paint() end
+
+	local luaphysgun = vgui.Create("DCheckBoxLabel", bindrow)
+	luaphysgun:SetText("Spawn with lua physgun")
+	luaphysgun:SetConVar("pk_luaphysgun")
+	luaphysgun:SizeToContents()
+	luaphysgun:Dock(LEFT)
 end
 
 function PANEL:RefreshData()

@@ -100,7 +100,12 @@ end
 function GM:PlayerLoadout(ply)
 	if ply:Team() != TEAM_UNASSIGNED then
 		ply:StripWeapons()
-		ply:Give("weapon_physgun")
+
+		if ply:GetInfoNum("pk_luaphysgun", 1) == 0 then
+			ply:Give("weapon_physgun")
+		else
+			ply:Give("propkill_physgun")
+		end
 	end
 
 	local col = ply:GetInfo("cl_weaponcolor")
