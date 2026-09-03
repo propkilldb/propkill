@@ -52,7 +52,7 @@ function GM:InitPostEntity()
 		MaxCollisionChecksPerTimestep = 500,
 		MaxCollisionsPerObjectPerTimestep = 10,
 		MaxFrictionMass = 1,
-		MaxVelocity = 2200,
+		MaxVelocity = 1800,
 		MinFrictionMass = 10,
 	})
 
