@@ -1,350 +1,555 @@
-// wallhack taken from noobler by ownage
--- TODO: replace all this aids with a stripped down version of leaked ms
+-- ----------------------------------------------------
+-- Module setup
+-- ----------------------------------------------------
+local UseMaterial = CreateMaterial("WallMaterial3", "VertexLitGeneric", {
+	["$basetexture"] = "Models/Debug/debugwhite",
+	["$nocull"] = 1,
+	["$model"] = 1,
+})
 
-local b = debug.getregistry()
-local d = concommand.Add
-local e = sql
-local RCC = RunConsoleCommand
-local g = CreateMaterial("WallMaterial3", "VertexLitGeneric", {["$basetexture"] = "Models/Debug/debugwhite", ["$nocull"] = 1, ["$model"] = 1})
-local h = {}
+local Menu
+local props = {}
+local LP = LocalPlayer()
+local MANUAL_DRAW = 512
+local installed = false
+
+CreateClientConVar("ms_enable", "1", true, false, "enable/disable builtin cheats")
+
+surface.CreateFont("ass", {
+	font = "coolvetica",
+	size = 20,
+	antialias = true
+})
+
 local ENTITY = FindMetaTable("Entity")
+local MS = {
+	PlayerWalls = true,
+	PropWalls = true,
+	WallsAlwaysSolid = true,
+	ESP = true,
+	Boxes = false,
+	BHop = true,
+	FOV = 90,
+	PlayerOpacity = 95,
+	PlayerColour = { 1, 1, 1 },
+	PropOpacity = 30,
+	PropNormalColour = { 0, 1, 0 },
+	PropWallOpacity = 30
+}
 
-function pk_save_client_settings()
-	file.Write("pkr_settings.txt", util.TableToJSON(pk_ms_settings_table))
+-- ----------------------------------------------------
+-- Settings
+-- ----------------------------------------------------
+local function LoadData()
+	local Data = sql.Query("SELECT * FROM MS_Settings")
+
+	for k, v in pairs(Data) do
+		local NewData
+		if (v.Value == "true") then
+			NewData = true
+		elseif (v.Value == "false") then
+			NewData = false
+		elseif (string.find(v.Value, "|")) then
+			local tbl = string.Explode("|", v.Value)
+			NewData = tbl
+		elseif (tonumber(v.Value)) then
+			NewData = tonumber(v.Value)
+		else
+			NewData = v.Value
+		end
+
+		MS[v.Setting] = NewData
+	end
 end
 
-pk_settings_file = file.Read("pkr_settings.txt")
+local function SaveData()
+	for k, v in pairs(MS) do
+		local Key = tostring(k)
+		local Query = sql.Query(string.format("SELECT * FROM MS_Settings WHERE Setting = '%s'", Key))
+		local Data = ""
+		if (type(v) == "table") then
+			for k2, v2 in pairs(v) do
+				Data = Data .. tostring(v2) .. "|"
+			end
+			Data = string.Left(Data, string.len(Data) - 1)
+		else
+			Data = tostring(v)
+		end
 
-pk_ms_settings_table = nil
+		if (Query) then
+			sql.Query(string.format("UPDATE MS_Settings SET Value = '%s' WHERE Setting = '%s'", Data, Key))
+		else
+			sql.Query(string.format("INSERT INTO MS_Settings('Setting', 'Value') VALUES( '%s', '%s' )", Key, Data))
+		end
+	end
+end
 
-if pk_settings_file then
-	pk_ms_settings_table = util.JSONToTable(pk_settings_file)
+if (sql.TableExists("MS_Settings")) then
+	LoadData()
 else
-	pk_ms_settings_table = {
-		PlayerWalls=true,
-		PropWalls=true,
-		WallsAlwaysSolid=true,
-		ESP=true,
-		ESPOffset=Vector(0,0,15),
-		Boxes=false,
-		PlayerOpacity=100,
-		PlayerColour={1,1,1},
-		PropOpacity=30,
-		PropNormalColour={0.525,0,1},
-		PropWallOpacity=60,
-		VertBeam = false,
-		RoofTiles = false,
-		RemoveSkybox = false,
-		NoLerp = false,
-	}
-	pk_save_client_settings()
+	sql.Query("CREATE TABLE MS_Settings( Setting varchar(255), Value varchar(255) )")
+	SaveData()
 end
 
+-- ----------------------------------------------------
+-- Entity helpers
+-- ----------------------------------------------------
 function ENTITY:IsProp()
-	return self:GetClass()=="prop_physics" or self:GetClass()=="gmod_button"
+	return self:GetClass() == "prop_physics"
 end
 
-local function u()
-	local v = player.GetAll()
-	local v = table.Add(v, ents.FindByClass("prop_physics"))
-	local v = table.Add(v, ents.FindByClass("gmod_button"))
-	return v
-end
+-- ----------------------------------------------------
+-- Wallhack
+-- ----------------------------------------------------
+local function PropRenderOverride(self, flag)
+	if flag != MANUAL_DRAW then return end
+	if not MS.PropWalls then return end
 
-local function w()
-	h = ents.FindByClass("gmod_button")
-	h = table.Add(h, ents.FindByClass("prop_physics"))
-	h = table.Add(h, ents.FindByClass("ctf_flag"))
-end
-
-hook.Add("Think", "addbuttons", w)
-
-local function ms_onentcreated(entname)
-	local y = entname
-	if pk_ms_settings_table.PropWalls then
-		if not y.Mat and y:GetClass()=="prop_physics" or y:GetClass()=="gmod_button" then
-			y.Mat=y:GetMaterial()
-			y:SetNoDraw(true)
-			y:DrawShadow(false)
-		end
-	else
-		if y.Mat and y:GetClass()=="prop_physics" or y:GetClass()=="gmod_button" then
-			local z=y.Mat or ""y:SetNoDraw(false)
-			y:DrawShadow(true)
-			y.Mat=nil
-		end
-	end
-end
-
-hook.Add("OnEntityCreated", "MSEntityCreated", ms_onentcreated)
-
-local function A()
-	for l,m in pairs(h) do
-		ms_onentcreated(m)
-	end
-end
-
-local function B(C)
-	return Color(255-C.r,255-C.g,255-C.b,255)
-end
-
-local function ms_prop_screenspace_stuff()
-	local E=pk_ms_settings_table.PropNormalColour
-	cam.Start3D(EyePos(),EyeAngles())
 	cam.IgnoreZ(true)
-	render.MaterialOverride(g)
 	render.SuppressEngineLighting(true)
-	if pk_ms_settings_table.PropWalls and pk_ms_settings_table.PropWallOpacity then
-		render.SetBlend(pk_ms_settings_table.PropWallOpacity/100)
-		for l,m in pairs(h) do
-			if IsValid(m) then
-				if m:GetClass() == "ctf_flag" then
-					local tc = team.GetColor(m:GetTeam())
-					render.SetColorModulation(tc["r"]/255,tc["g"]/255,tc["b"]/255)
-				else
-					render.SetColorModulation(E[1],E[2],E[3])
-				end
-				m:SetNoDraw(true)
-				m:DrawModel()
-			end
-		end
-	end
+	render.SetBlend(MS.PropWallOpacity / 100)
+	render.SetColorModulation(unpack(MS.PropNormalColour))
+	render.MaterialOverride(UseMaterial)
 
-	if pk_ms_settings_table.PlayerWalls and pk_ms_settings_table.PlayerOpacity then
-		render.SetBlend(pk_ms_settings_table.PlayerOpacity/100)
-		for l,m in pairs(player.GetAll()) do
-			if m:Team() == TEAM_UNASSIGNED or m:Team() == TEAM_SPECTATOR then continue end
-			local tc = team.GetColor(m:Team())
-			render.SetColorModulation(tc["r"]/255,tc["g"]/255,tc["b"]/255)
-			if IsValid(m) and m:Alive() and m:GetMoveType()~=0 then
-				m:DrawModel()
-			end
-		end
-	end
-
-	cam.IgnoreZ(false)
-
-	if not pk_ms_settings_table.WallsAlwaysSolid then
-		if pk_ms_settings_table.PlayerWalls then
-			render.SetBlend(1)
-			render.SetColorModulation(1,1,1)
-			render.MaterialOverride(nil)
-			for l,m in pairs(player.GetAll()) do
-				if IsValid(m) and m:GetMoveType()~=0 and m:Alive() then
-					m:DrawModel()
-				end
-			end
-		end
-
-		if pk_ms_settings_table.PropWalls and pk_ms_settings_table.PropOpacity then
-			render.MaterialOverride(g)
-			render.SetColorModulation(E[1],E[2],E[3])
-			render.SetBlend(pk_ms_settings_table.PropOpacity/100)
-			for l,m in pairs(h) do
-				if IsValid(m) then
-					m:SetNoDraw(true)
-					m:DrawModel()
-				end
-			end
-		end
-	end
+	self:DrawModel()
 
 	render.MaterialOverride(nil)
-	render.SetColorModulation(1,1,1)
-	render.SetBlend(1)
-	cam.IgnoreZ(false)
 	render.SuppressEngineLighting(false)
+	cam.IgnoreZ(false)
+end
+
+local function DoMaterialCheckSingle(ent)
+	if not ent:IsProp() then return end
+	
+	if MS.PropWalls then
+		ent.RenderOverride = PropRenderOverride
+		props[ent] = true
+	else
+		ent.RenderOverride = nil
+		props[ent] = nil
+	end
+end
+
+local function MSPropRemoved(ent, fullUpdate)
+	if fullUpdate or not ent:IsProp() then return end
+	props[ent] = nil
+end
+
+local function DoMaterialCheck()
+	for _, ent in ipairs(ents.GetAll()) do
+		DoMaterialCheckSingle(ent)
+	end
+end
+
+local function Wallhack()
+	local PlayerColor = MS.PlayerColour
+
+	cam.Start3D(EyePos(), EyeAngles())
+		cam.IgnoreZ(true)
+		render.MaterialOverride(UseMaterial)
+		render.SuppressEngineLighting(true)
+
+		if (MS.PlayerWalls and MS.PlayerOpacity) then
+			render.SetBlend(MS.PlayerOpacity / 100)
+			render.SetColorModulation(PlayerColor[1], PlayerColor[2], PlayerColor[3])
+			for k, v in pairs(player.GetAll()) do
+				if v:GetObserverMode() != OBS_MODE_NONE then continue end
+				if (IsValid(v) and v:Alive() and v:GetMoveType() ~= 0) then
+					v:DrawModel()
+				end
+			end
+		end
+
+		cam.IgnoreZ(false)
+
+		if (not MS.WallsAlwaysSolid) then
+			if (MS.PlayerWalls) then
+				render.SetBlend(1)
+				render.SetColorModulation(1, 1, 1)
+				render.MaterialOverride(nil)
+				for k, v in pairs(player.GetAll()) do
+					if v:GetObserverMode() != OBS_MODE_NONE then continue end
+					if (IsValid(v) and v:GetMoveType() ~= 0 and v:Alive()) then
+						v:DrawModel()
+					end
+				end
+			end
+		end
+		
+		for ent, _ in next, props do
+			if ent:IsDormant() then continue end
+			ent:DrawModel(MANUAL_DRAW)
+		end
+
+		render.MaterialOverride(nil)
+		render.SetColorModulation(1, 1, 1)
+		render.SetBlend(1)
+		cam.IgnoreZ(false)
+		render.SuppressEngineLighting(false)
 	cam.End3D()
 end
 
-hook.Add("RenderScreenspaceEffects", "MSRender", ms_prop_screenspace_stuff)
-
-local function visualstoggle()
-	if !pk_ms_settings_table.PropWalls then
-		surface.PlaySound("buttons/button1.wav")
-	else
-		surface.PlaySound("buttons/button19.wav")
-	end
-	pk_ms_settings_table.PropWalls = not pk_ms_settings_table.PropWalls
-	pk_ms_settings_table.PlayerWalls = not pk_ms_settings_table.PlayerWalls
-	pk_ms_settings_table.ESP = not pk_ms_settings_table.ESP
-	pk_save_client_settings()
+local function TogglePropChams()
+	MS.PropWalls = not MS.PropWalls
+	DoMaterialCheck()
 end
 
-concommand.Add("pk_visuals", visualstoggle)
+local function TogglePlayerChams()
+	MS.PlayerWalls = not MS.PlayerWalls
+	DoMaterialCheck()
+end
 
-function pk_esp()
-	for k,v in pairs(player.GetAll()) do
-		if v != LocalPlayer() and pk_ms_settings_table.ESP and v:Alive() and v:Team() != TEAM_UNASSIGNED and v:Team() != TEAM_SPECTATOR then
-			local pos1 = v:GetBonePosition(v:LookupBone("ValveBiped.Bip01_Head1") or -1) + Vector(0,0,15)
-			local pos = pos1:ToScreen()
-			draw.SimpleText(v:Nick(), "stb24", pos.x, pos.y, Color(255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM)
+-- ----------------------------------------------------
+-- HUD
+-- ----------------------------------------------------
+local function InvertColour(c)
+	return Color(255 - c.r, 255 - c.g, 255 - c.b, 255)
+end
 
+local function HUDPaint()
+	local PlayerColor = MS.PlayerColour
+	local PropColor = MS.PropNormalColour
+
+	for k, v in pairs(player.GetAll()) do
+		if (not IsValid(v) or v == LP or not v:Alive() or v:GetObserverMode() != OBS_MODE_NONE) then continue end
+		local pos = (v:GetShootPos() + Vector(0, 0, 10)):ToScreen()
+
+		if (MS.ESP) then
+			draw.SimpleTextOutlined(string.upper(v:Nick()), "ass", pos.x, pos.y - 16, team.GetColor(v:Team()), 1, 1, 1, InvertColour(team.GetColor(v:Team())))
 		end
-	end
-end
-hook.Add("HUDPaint", "pk_esp", pk_esp)
 
-function pk_flagesp()
-	for k,v in pairs(ents.GetAll()) do
-		if v:GetClass() == "ctf_flag" then
-			local pos1 = v:GetPos()+Vector(0,0,100)
-			local pos = pos1:ToScreen()
-			draw.SimpleText(string.Replace(team.GetName(v:GetTeam()), "Team", "Flag"), "stb24", pos.x, pos.y, team.GetColor(v:GetTeam()) , TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM)
-		end
-	end
-end
-hook.Add("HUDPaint", "pk_flagesp", pk_flagesp)
-
-local jump = false
-
-local function msrotate()
-	local ply = LocalPlayer()
-	local a = ply:EyeAngles()
-	ply:SetEyeAngles(Angle(a.p, a.y-180, a.r))
-end
-concommand.Add("ms_rotate", msrotate)
-
-local function msrotate2()
-	local ply = LocalPlayer()
-	local a = ply:EyeAngles() ply:SetEyeAngles(Angle(a.p-a.p-a.p, a.y-180, a.r))
-	jump = true
-end
-concommand.Add("ms_rotate2", msrotate2)
-
-hook.Add("CreateMove", "rotatejumpfix", function(cmd)
-	if jump and cmd:CommandNumber() != 0 then
-		jump = false
-		cmd:AddKey(IN_JUMP)
-	end
-end)
-
-local function vertBeam()
-	if !pk_ms_settings_table.VertBeam then
-		hook.Add("PostPlayerDraw", "pk_vertbeam", function()
-			for k,v in pairs(player.GetAll()) do
-				if v != LocalPlayer() then
-					local t = {start = v:GetPos(), endpos = v:GetPos()+Vector(0,0,10000), filter = {v}, mask = MASK_SHOT}
-					local t2 = {start = v:GetPos() + Vector(0,0,10), endpos = v:GetPos()+Vector(0,0,-10000), filter = {v}, mask = MASK_SHOT}
-					local traceup = util.TraceLine(t)
-					local tracedown = util.TraceLine(t2)
-
-					render.SetMaterial(Material("sprites/tp_beam001"))
-
-					local centre = v:LocalToWorld(v:OBBCenter())
-
-					render.DrawBeam(centre, traceup.HitPos, 10, 0, 0, team.GetColor(v:Team()))
-					render.DrawBeam(centre, tracedown.HitPos, 10, 0, 0, team.GetColor(v:Team()))
-				end
-			end
-		end)
-		pk_ms_settings_table.VertBeam = !pk_ms_settings_table.VertBeam
-	else
-		hook.Remove("PostPlayerDraw", "pk_vertbeam")
-		pk_ms_settings_table.VertBeam = !pk_ms_settings_table.VertBeam
-	end
-	pk_save_client_settings()
-end
-concommand.Add("pk_vertbeam", vertBeam)
-
-local DrawPos
-local params = {
-	["$basetexture"] = "phoenix_storms/pack2/train_floor",
-	["$nodecal"] = 1,
-	["$model"] = 1,
-	["$additive"] = 0,
-	["$nocull"] = 1,
-	["$alpha"] = 0.95
-}
-local RoofMaterial = CreateMaterial("RoofMaterialTest8", "UnlitGeneric", params)
-
-timer.Create("DrawRoofTiles", 0.1, 0, function()
-	if not IsValid(LocalPlayer()) then return end
-	local tracedata = {}
-	tracedata.start = LocalPlayer():GetShootPos()
-	tracedata.endpos = tracedata.start + Vector(0,0,9999999)
-	tracedata.filter = LocalPlayer()
-	tracedata.mask = MASK_NPCWORLDSTATIC
-	local trace = util.TraceLine(tracedata)
-	if trace.HitWorld and (trace.HitTexture == "TOOLS/TOOLSSKYBOX" or trace.HitTexture == "TOOLS/TOOLSSKYBOX2D") then
-		DrawPos = DrawPos or trace.HitPos
-		DrawPos.z = trace.HitPos.z
-	end
-	if IsValid(DrawPos) then
-		timer.Remove("DrawRoofTiles")
-	end
-end)
-
-local function roofTiles()
-	if !pk_ms_settings_table.RoofTiles then
-		hook.Add("PostDrawOpaqueRenderables", "ReplaceSkyBox", function()
-			if not DrawPos then return end
-			local pos1 = DrawPos + Vector( 5000,  5000, 0)
-			local pos2 = DrawPos + Vector(-5000,  5000, 0)
-			local pos3 = DrawPos + Vector(-5000, -5000, 0)
-			local pos4 = DrawPos + Vector( 5000, -5000, 0)
-			cam.Start3D(EyePos(), EyeAngles())
-				render.SuppressEngineLighting(true)
-				render.SetBlend(0.4)
-				render.SetMaterial(RoofMaterial)
-
-				render.DrawQuad(pos1, pos2, pos3, pos4)
-				render.DrawQuad(pos1 + Vector(5000), pos2 + Vector(5000), pos3 + Vector(5000), pos4 + Vector(5000))
-				render.DrawQuad(pos1 - Vector(5000), pos2 - Vector(5000), pos3 - Vector(5000), pos4 - Vector(5000))
-				render.DrawQuad(pos1 - Vector(5000, 5000), pos2 - Vector(5000, 5000), pos3 - Vector(5000, 5000), pos4 - Vector(5000, 5000))
-				render.DrawQuad(pos1 - Vector(5000, -5000), pos2 - Vector(5000, -5000), pos3 - Vector(5000, -5000), pos4 - Vector(5000, -5000))
-				render.DrawQuad(pos1 - Vector(0, -5000), pos2 - Vector(0, -5000), pos3 - Vector(0, -5000), pos4 - Vector(0, -5000))
-				render.DrawQuad(pos1 + Vector(0, -5000), pos2 + Vector(0, -5000), pos3 + Vector(0, -5000), pos4 + Vector(0, -5000))
-
-				render.DrawQuad(pos1 - Vector(-5000, -5000), pos2 - Vector(-5000, -5000), pos3 - Vector(-5000, -5000), pos4 - Vector(-5000, -5000))
-				render.DrawQuad(pos1 - Vector(-5000, 5000), pos2 - Vector(-5000, 5000), pos3 - Vector(-5000, 5000), pos4 - Vector(-5000, 5000))
-
-
-				render.SuppressEngineLighting(false)
-				render.SetBlend(1)
+		if (MS.Boxes) then
+			cam.Start3D()
+			render.DrawWireframeBox(v:GetPos(), v:GetAngles(), v:OBBMins(), v:OBBMaxs(), Color(PlayerColor[1] * 255, PlayerColor[2] * 255, PlayerColor[3] * 255), true)
 			cam.End3D()
-		end)
-		pk_ms_settings_table.RoofTiles = !pk_ms_settings_table.RoofTiles
-	else
-		hook.Remove("PostDrawOpaqueRenderables", "ReplaceSkyBox")
-		pk_ms_settings_table.RoofTiles = !pk_ms_settings_table.RoofTiles
+		end
 	end
-	pk_save_client_settings()
 end
-concommand.Add("pk_rooftiles", roofTiles)
 
-local function removeSkybox()
-	PK_SetConfig("RemoveSkybox", !PK.GetConfig("RemoveSkybox"))
+-- ----------------------------------------------------
+-- FOV
+-- ----------------------------------------------------
+local function CalcView(ply, pos, angles, fov)
+	local view = {
+		fov = MS.FOV
+	}
+
+	return view
 end
-concommand.Add("pk_removeskybox", removeSkybox)
 
-function UseLerpCommand(ply, cmd, args)
-	PK_SetConfig("UseLerpCommand", !PK.GetConfig("UseLerpCommand"))
-end
-concommand.Add("pk_cl_physics", UseLerpCommand)
+-- ----------------------------------------------------
+-- Jump
+-- ----------------------------------------------------
+local dojump = false
 
-local bhopEnabled = true
-local LP = LocalPlayer()
-
-hook.Add("InitPostEntity", "PK_Bhop_LP", function()
-	LP = LocalPlayer()
-	hook.Remove("InitPostEntity", "PK_Bhop_LP")
-end)
-
-hook.Add("CreateMove", "PK_Bhop", function(cmd)
-	if not bhopEnabled then return end
+local function JumpHook(cmd)
 	if cmd:CommandNumber() == 0 then return end
-	if LP:InVehicle() or LP:GetMoveType() != MOVETYPE_WALK or LP:WaterLevel() > 0 then
-		return 
-	end
-	if not cmd:KeyDown(IN_JUMP) then return end
 
-	if not LP:IsOnGround() then
+	if LP:InVehicle() or LP:GetMoveType() != MOVETYPE_WALK or LP:WaterLevel() > 0 then
+		dojump = false
+		return
+	end
+
+	local wantJump = dojump or (MS.BHop and cmd:KeyDown(IN_JUMP))
+	if not wantJump then return end
+
+	if LP:IsOnGround() then
+		dojump = false
+		cmd:AddKey(IN_JUMP)
+	else
 		cmd:RemoveKey(IN_JUMP)
 	end
+end
+
+-- ----------------------------------------------------
+-- Rotate
+-- ----------------------------------------------------
+local function Rotate180()
+	local E = LP:EyeAngles()
+	LP:SetEyeAngles(Angle(E.p, E.y - 180, E.r))
+end
+
+local function Rotate180Up()
+	local E = LP:EyeAngles()
+	LP:SetEyeAngles(Angle(-E.p, E.y - 180, E.r))
+	dojump = true
+end
+
+-- ----------------------------------------------------
+-- Menu
+-- ----------------------------------------------------
+local function OpenMenu()
+	if (IsValid(Menu)) then Menu:SetVisible(true) return end
+	Menu = vgui.Create("DFrame")
+	Menu:SetSize(275, 280)
+	Menu:SetPos(ScrW() / 2 - 137.5, ScrH() / 2 - 140)
+	Menu:ShowCloseButton(false)
+	Menu:SetTitle("Minge Script - Noobler Version")
+	Menu:MakePopup()
+	Menu.Paint = function(self)
+		draw.RoundedBox(2, 0, 0, self:GetWide(), self:GetTall(), Color(80, 80, 80, 260))
+		draw.RoundedBox(0, 0, 20, self:GetWide(), 2, Color(120, 120, 120, 255))
+	end
+
+	local Panel = vgui.Create("DPanel", Menu)
+	Panel:SetSize(267.5, 250)
+	Panel:SetPos(4, 25)
+	Panel.Paint = function(self)
+		draw.RoundedBox(2, 0, 0, self:GetWide(), self:GetTall(), Color(60, 60, 60, 260))
+	end
+
+	local PWalls = vgui.Create("DCheckBoxLabel", Panel)
+	PWalls:SetPos(5, 5)
+	PWalls:SetText("Player Wallhack")
+	PWalls:SizeToContents()
+	PWalls:SetValue(MS.PlayerWalls)
+	PWalls.OnChange = function(self, bVal)
+		MS.PlayerWalls = bVal
+		DoMaterialCheck()
+	end
+
+	local PWalls = vgui.Create("DCheckBoxLabel", Panel)
+	PWalls:SetPos(130, 5)
+	PWalls:SetText("Solid Walls Only")
+	PWalls:SizeToContents()
+	PWalls:SetValue(MS.WallsAlwaysSolid)
+	PWalls.OnChange = function(self, bVal)
+		MS.WallsAlwaysSolid = bVal
+	end
+	PWalls:SetToolTip("Makes Player/Prop wallhack ignore visibility")
+
+	local POpacity = vgui.Create("DNumSlider", Panel)
+	POpacity:SetPos(10, 20)
+	POpacity:SetSize(250, 20)
+	POpacity:SetMin(0)
+	POpacity:SetMax(99)
+	POpacity:SetText("Player Transperency")
+	POpacity:SetValue(MS.PlayerOpacity)
+	POpacity.OnValueChanged = function(self, val)
+		MS.PlayerOpacity = val
+	end
+
+	local PRed = vgui.Create("DNumSlider", Panel)
+	PRed:SetPos(10, 35)
+	PRed:SetSize(250, 20)
+	PRed:SetMin(0)
+	PRed:SetMax(100)
+	PRed:SetText("Player Red Colour")
+	PRed:SetValue(MS.PlayerColour[1] * 100)
+	PRed.OnValueChanged = function(self, val)
+		MS.PlayerColour[1] = val / 100
+	end
+
+	local PGreen = vgui.Create("DNumSlider", Panel)
+	PGreen:SetPos(10, 50)
+	PGreen:SetSize(250, 20)
+	PGreen:SetMin(0)
+	PGreen:SetMax(100)
+	PGreen:SetText("Player Green Colour")
+	PGreen:SetValue(MS.PlayerColour[2] * 100)
+	PGreen.OnValueChanged = function(self, val)
+		MS.PlayerColour[2] = val / 100
+	end
+
+	local PBlue = vgui.Create("DNumSlider", Panel)
+	PBlue:SetPos(10, 65)
+	PBlue:SetSize(250, 20)
+	PBlue:SetMin(0)
+	PBlue:SetMax(100)
+	PBlue:SetText("Player Blue Colour")
+	PBlue:SetValue(MS.PlayerColour[3] * 100)
+	PBlue.OnValueChanged = function(self, val)
+		MS.PlayerColour[3] = val / 100
+	end
+
+	local PrWalls = vgui.Create("DCheckBoxLabel", Panel)
+	PrWalls:SetPos(5, 95)
+	PrWalls:SetText("Prop Wallhack")
+	PrWalls:SizeToContents()
+	PrWalls:SetValue(MS.PropWalls)
+	PrWalls.OnChange = function(self, bVal)
+		MS.PropWalls = bVal
+		DoMaterialCheck()
+	end
+
+	local PrOpacity = vgui.Create("DNumSlider", Panel)
+	PrOpacity:SetPos(10, 110)
+	PrOpacity:SetSize(250, 20)
+	PrOpacity:SetMin(0)
+	PrOpacity:SetMax(99)
+	PrOpacity:SetText("Prop Wall Opacity")
+	PrOpacity:SetValue(MS.PropWallOpacity)
+	PrOpacity.OnValueChanged = function(self, val)
+		MS.PropWallOpacity = val
+	end
+
+	local PrOpacity = vgui.Create("DNumSlider", Panel)
+	PrOpacity:SetPos(10, 125)
+	PrOpacity:SetSize(250, 20)
+	PrOpacity:SetMin(0)
+	PrOpacity:SetMax(99)
+	PrOpacity:SetText("Prop Base Opacity")
+	PrOpacity:SetValue(MS.PropOpacity)
+	PrOpacity.OnValueChanged = function(self, val)
+		MS.PropOpacity = val
+	end
+
+	local PRed = vgui.Create("DNumSlider", Panel)
+	PRed:SetPos(10, 140)
+	PRed:SetSize(250, 20)
+	PRed:SetMin(0)
+	PRed:SetMax(100)
+	PRed:SetDecimals(0)
+	PRed:SetText("Prop Red Colour")
+	PRed:SetValue(MS.PropNormalColour[1] * 100)
+	PRed.OnValueChanged = function(self, val)
+		MS.PropNormalColour[1] = val / 100
+	end
+
+	local PGreen = vgui.Create("DNumSlider", Panel)
+	PGreen:SetPos(10, 155)
+	PGreen:SetSize(250, 20)
+	PGreen:SetMin(0)
+	PGreen:SetMax(100)
+	PGreen:SetDecimals(0)
+	PGreen:SetText("Prop Green Colour")
+	PGreen:SetValue(MS.PropNormalColour[2] * 100)
+	PGreen.OnValueChanged = function(self, val)
+		MS.PropNormalColour[2] = val / 100
+	end
+
+	local PBlue = vgui.Create("DNumSlider", Panel)
+	PBlue:SetPos(10, 170)
+	PBlue:SetSize(250, 20)
+	PBlue:SetMin(0)
+	PBlue:SetMax(100)
+	PBlue:SetDecimals(0)
+	PBlue:SetText("Prop Blue Colour")
+	PBlue:SetValue(MS.PropNormalColour[3] * 100)
+	PBlue.OnValueChanged = function(self, val)
+		MS.PropNormalColour[3] = val / 100
+	end
+
+	local FOV = vgui.Create("DNumSlider", Panel)
+	FOV:SetPos(10, 185)
+	FOV:SetSize(250, 20)
+	FOV:SetMin(1)
+	FOV:SetMax(160)
+	FOV:SetDecimals(0)
+	FOV:SetText("FOV")
+	FOV:SetValue(MS.FOV)
+	FOV.OnValueChanged = function(self, val)
+		MS.FOV = val
+	end
+
+	local ESP = vgui.Create("DCheckBoxLabel", Panel)
+	ESP:SetValue(MS.ESP)
+	ESP:SetText("Player ESP")
+	ESP:SetPos(5, 210)
+	ESP:SizeToContents()
+	ESP.OnChange = function(self, bVal)
+		MS.ESP = bVal
+	end
+
+	local Boxes = vgui.Create("DCheckBoxLabel", Panel)
+	Boxes:SetValue(MS.Boxes)
+	Boxes:SetText("Bounding Boxes")
+	Boxes:SetPos(130, 210)
+	Boxes:SizeToContents()
+	Boxes.OnChange = function(self, bVal)
+		MS.Boxes = bVal
+	end
+
+	local BHop = vgui.Create("DCheckBoxLabel", Panel)
+	BHop:SetValue(MS.BHop)
+	BHop:SetText("Auto BHop")
+	BHop:SetPos(5, 228)
+	BHop:SizeToContents()
+	BHop.OnChange = function(self, bVal)
+		MS.BHop = bVal
+	end
+end
+
+local function CloseMenu()
+	SaveData()
+	Menu:SetVisible(false)
+end
+
+-- ----------------------------------------------------
+-- Lifecycle
+-- ----------------------------------------------------
+local function Install()
+	if installed then return end
+	installed = true
+	LP = LocalPlayer()
+
+	RunConsoleCommand("cl_drawspawneffect", 0)
+
+	hook.Add("EntityRemoved", "MSPropListRemove", MSPropRemoved)
+	hook.Add("NetworkEntityCreated", "MSEntityCreated", DoMaterialCheckSingle)
+	hook.Add("InitPostEntity", "MSInitialiseEntites", DoMaterialCheck)
+	hook.Add("PreDrawHUD", "MSRender", Wallhack)
+	hook.Add("HUDPaint", "MSHUDPaint", HUDPaint)
+	hook.Add("CalcView", "MSCalcView", CalcView)
+	hook.Add("CreateMove", "MSJump", JumpHook)
+
+	concommand.Add("ms_rotate", Rotate180)
+	concommand.Add("ms_rotate2", Rotate180Up)
+	concommand.Add("+ms_menu", OpenMenu)
+	concommand.Add("-ms_menu", CloseMenu)
+	concommand.Add("ms_propchams", TogglePropChams)
+	concommand.Add("ms_playerchams", TogglePlayerChams)
+
+	DoMaterialCheck()
+end
+
+local function Uninstall()
+	if not installed then return end
+	installed = false
+	dojump = false
+
+	hook.Remove("EntityRemoved", "MSPropListRemove")
+	hook.Remove("NetworkEntityCreated", "MSEntityCreated")
+	hook.Remove("InitPostEntity", "MSInitialiseEntites")
+	hook.Remove("PreDrawHUD", "MSRender")
+	hook.Remove("HUDPaint", "MSHUDPaint")
+	hook.Remove("CalcView", "MSCalcView")
+	hook.Remove("CreateMove", "MSJump")
+
+	concommand.Remove("ms_rotate")
+	concommand.Remove("ms_rotate2")
+	concommand.Remove("+ms_menu")
+	concommand.Remove("-ms_menu")
+	concommand.Remove("ms_propchams")
+	concommand.Remove("ms_playerchams")
+
+	for ent in pairs(props) do
+		if IsValid(ent) then
+			ent.RenderOverride = nil
+		end
+	end
+	table.Empty(props)
+
+	if IsValid(Menu) then
+		Menu:Remove()
+		Menu = nil
+	end
+end
+
+local function SetEnabled(on)
+	if on then
+		Install()
+	else
+		Uninstall()
+	end
+end
+
+cvars.AddChangeCallback("ms_enable", function(name, old, new)
+	SetEnabled(tonumber(new) ~= 0)
 end)
 
-concommand.Add("pk_bhop", function()
-	bhopEnabled = !bhopEnabled
-	print("bhop " .. (bhopEnabled and "enabled" or "disabled"))
+hook.Add("InitPostEntity", "MSInstaller", function()
+	if GetConVar("ms_enable"):GetBool() == true then
+		Install()
+	end
 end)
