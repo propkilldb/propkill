@@ -98,7 +98,7 @@ function GM:PlayerSetModel(ply)
 end
 
 function GM:PlayerLoadout(ply)
-	if ply:Team() != TEAM_UNASSIGNED then
+	if not ply:IsSpectating() then
 		ply:StripWeapons()
 
 		if ply:GetInfoNum("pk_luaphysgun", 1) == 0 then
@@ -113,7 +113,7 @@ function GM:PlayerLoadout(ply)
 end
 
 function GM:PlayerSpawn(ply)
-	if ply:IsSpectating() then
+	if ply:Team() == TEAM_SPECTATOR then
 		GAMEMODE:PlayerSpawnAsSpectator(ply)
 		return
 	end
@@ -142,7 +142,7 @@ end
 
 function GM:PlayerSelectSpawn(ply)
 	local spawns = ents.FindByClass("info_player_*")
-	if ply:Team() != TEAM_DEATHMATCH then
+	if ply:IsSpectating() then
 		return spawns[math.random(#spawns)]
 	end
 
@@ -155,7 +155,7 @@ function GM:PlayerSelectSpawn(ply)
 		for _, v in ipairs(players) do
 			if v == ply then continue end
 			if not v:Alive() then continue end
-			if v:Team() != TEAM_DEATHMATCH then continue end
+			if v:IsSpectating() then continue end
 
 			local plydist = v:GetPos():Distance2D(spawn:GetPos())
 			if plydist < mindist then
@@ -207,7 +207,7 @@ function GetHighestKillStreak()
 	local streak = 0
 
 	for k,v in next, player.GetAll() do
-		if v:Team() != TEAM_DEATHMATCH then continue end
+		if v:IsSpectating() then continue end
 
 		if (v.PKStreak or 0) > streak then
 			streak = v.PKStreak
@@ -318,7 +318,7 @@ timer.Create("pk_anti-wallstuck", 1, 0, function()
 end)
 
 hook.Add("PlayerShouldTakeDamage", "PK_PlayerShouldTakeDamage", function(ply, attacker)
-	if ply:Team() == TEAM_UNASSIGNED then
+	if ply:IsSpectating() then
 		return false
 	end
 
@@ -327,7 +327,7 @@ hook.Add("PlayerShouldTakeDamage", "PK_PlayerShouldTakeDamage", function(ply, at
 	end
 
 	if IsValid(attacker) and attacker:IsPlayer() then
-		if attacker:Team() == TEAM_UNASSIGNED then
+		if attacker:IsSpectating() then
 			return false
 		end
 	elseif IsValid(attacker) and attacker:GetClass() == "trigger_hurt" then

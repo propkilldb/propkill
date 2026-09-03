@@ -147,8 +147,10 @@ function meta:StopSpectating(force)
 	hook.Run("PK_StoppedSpectating", self, force)
 end
 
+// spectators plus every builtin "not in the game" team
 function meta:IsSpectating()
-	return self:Team() == TEAM_SPECTATOR
+	local t = self:Team()
+	return t == TEAM_SPECTATOR or t == TEAM_CONNECTING or t == TEAM_UNASSIGNED
 end
 
 util.AddNetworkString("PK_SpectatePlayer")
