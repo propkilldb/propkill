@@ -1,8 +1,9 @@
 
 CreateClientConVar("pk_grabfix", "1", true, true, "fixes prop grabbing at high velocity")
 CreateClientConVar("pk_spawnfix", "1", true, true, "changes how props spawn for more reliable grabbing")
-CreateClientConVar("pk_spawndist", "2048", true, true, "changes the maximum spawn distance of props, only updates on spawn", 0, 2048)
 CreateClientConVar("pk_redundancy", "1", true, true, "the amount of redundant packets sent to the server in case of packet loss or delays", 0, 4)
+
+local spawndist = CreateConVar("pk_spawndist", "1300", {FCVAR_ARCHIVE, FCVAR_REPLICATED}, "changes the spawn distance of props", 0, 8192)
 
 redundnet = redundnet or {}
 
@@ -74,10 +75,6 @@ redundnet.Receive("undo", function(ply, ...)
 	concommand.GetTable()["gmod_undo"](ply, ...)
 end)
 
-hook.Add("PlayerSpawn", "apply pk spawndist", function(ply)
-	ply.pkspawndist = ply:GetInfoNum("pk_spawndist", 2048)
-end)
-
 local function isInfront(ply, pos)
 	local diff = pos - (ply:GetShootPos() + ply:GetAimVector() * 40)
 	return ply:GetAimVector():Dot(diff) / diff:Length() > 0
@@ -122,7 +119,7 @@ function spawnfix()
 
 		local trace = {}
 		trace.start = vStart
-		trace.endpos = vStart + ( vForward * (ply.pkspawndist or 2048) )
+		trace.endpos = vStart + ( vForward * spawndist:GetInt() )
 		trace.filter = ply
 
 		local tr = util.TraceLine( trace )
