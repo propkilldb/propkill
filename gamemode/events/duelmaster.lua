@@ -4,108 +4,187 @@ local event = newEvent("duelmaster", "Duel Master", {
 	freezeplayers = false
 })
 local queue = {}
+local ROUND_DELAY = 1
+
+local function IsEventActive()
+	return PK.currentEvent == event
+end
+
+local function Enqueue(ply)
+	if not IsValid(ply) or not ply:IsPlayer() then return end
+	if ply.dueling then return end
+	if table.KeyFromValue(queue, ply) then return end
+
+	table.insert(queue, ply)
+end
+
+local function DequeueNextValid()
+	while #queue > 0 do
+		local ply = table.remove(queue, 1)
+
+		if IsValid(ply) and ply:IsPlayer() and not ply.dueling then
+			return ply
+		end
+	end
+end
+
+local function AnnounceDuelists(entrants)
+	for _, ply in next, entrants do
+		if not IsValid(ply) then continue end
+		ply:PrintMessage(HUD_PRINTCENTER, "You're up!")
+	end
+
+	local nextup = queue[1]
+	if not IsValid(nextup) then return end
+
+	for _, v in next, queue do
+		if not IsValid(v) or v.dueling then continue end
+		v:PrintMessage(HUD_PRINTCENTER, nextup:Nick() .. " is next")
+	end
+end
+
+local function FillDuel(despawn)
+	if not IsEventActive() then return end
+
+	local alive = {}
+	for _, p in next, event.players do
+		if IsValid(p) and p.dueling then
+			table.insert(alive, p)
+		end
+	end
+
+	local entrants = {}
+	while #alive < 2 do
+		local nxt = DequeueNextValid()
+		if not nxt then break end
+
+		nxt.dueling = true
+		nxt.opponent = nil
+
+		table.insert(alive, nxt)
+		table.insert(entrants, nxt)
+	end
+
+	if #alive < 2 then
+		event:End(alive[1])
+		return
+	end
+
+	alive[1].opponent = alive[2]
+	alive[2].opponent = alive[1]
+
+	SetGlobal2Entity("player1", alive[1])
+	SetGlobal2Entity("player2", alive[2])
+
+	timer.Simple(ROUND_DELAY, function()
+		if PK.currentEvent != event then return end
+
+		for _, ply in next, entrants do
+			if IsValid(ply) and ply.dueling and ply:IsSpectating() then
+				ply:StopSpectating(true)
+			end
+		end
+
+		if IsValid(despawn) and not despawn.dueling and not despawn:IsSpectating() then
+			for _, ply in next, player.GetAll() do
+				if ply != despawn and IsValid(ply) and plyp:Alive() and not ply:IsSpectating() then
+					despawn:SetSpectating(nil, true)
+					break
+				end
+			end
+		end
+	end)
+
+	AnnounceDuelists(entrants)
+end
+
+function DeleteDuelist(ply)
+	local wasDueling = IsValid(ply) and ply.dueling or false
+
+	local idx = IsValid(ply) and table.KeyFromValue(queue, ply) or nil
+	if idx then
+		table.remove(queue, idx)
+	end
+
+	if IsValid(ply) then
+		ply.dueling = false
+		ply.opponent = nil
+	end
+
+	if not IsEventActive() then return end
+
+	for _, ply in next, event.players do
+		if IsValid(ply) and ply.opponent == ply then
+			ply.opponent = nil
+		end
+	end
+
+	if wasDueling then
+		FillDuel(ply)
+	end
+end
 
 event:Hook("PK_CanStopSpectating", "no, u cant join in", function(ply)
 	return false
 end)
 
 event:Hook("PlayerJoinedEvent", "add them to the queue", function(ply)
-	table.insert(queue, ply)
-	ply:SetSpectating(nil, true)
+	if not IsValid(ply) then return end
+
+	ply:SetNW2Int("duelscore", 0)
+	Enqueue(ply)
+
+	if not ply:IsSpectating() then
+		ply:SetSpectating(nil, true)
+	end
 end)
 
 event:Hook("PlayerLeftEvent", "remove them from the queue", function(ply)
 	DeleteDuelist(ply)
 end)
 
-event:Hook("PlayerDeath", "select next duelist", function(ply1)
-	if not ply1.dueling then return end
-	ply1.dueling = false
-
-	local ply2 = ply1.opponent
-
-	//ply1:SetNW2Int("duelscore", 0)
-	ply2:SetNW2Int("duelscore", ply2:GetNW2Int("duelscore", 0) + 1)
-
-	if ply2:GetNW2Int("duelscore", 0) == GetGlobal2Int("kills", 8) then
-		event:End(ply2)
-		return
+local function ResolveKiller(victim, inflictor, attacker)
+	if IsValid(inflictor) and inflictor:GetClass() == "prop_physics"
+		and IsValid(inflictor.Owner) and inflictor.Owner:IsPlayer() then
+		return inflictor.Owner
 	end
 
-	timer.Simple(1, function()
-		DespawnDuelist(ply1)
-	end)
+	if IsValid(attacker) and attacker:IsPlayer() then
+		return attacker
+	end
+end
 
-	SpawnNextDuelist(ply2)
+event:Hook("PlayerDeath", "select next duelist", function(victim, inflictor, attacker)
+	if not IsEventActive() then return end
+	if not victim.dueling then return end // already evicted
+
+	local opponent = victim.opponent
+
+	victim.dueling = false
+	victim.opponent = nil
+
+	Enqueue(victim)
+
+	local killer = ResolveKiller(victim, inflictor, attacker)
+
+	local scorer = nil
+	if IsValid(killer) and killer:IsPlayer() and killer != victim then
+		scorer = killer
+	elseif IsValid(opponent) and opponent:IsPlayer() then
+		scorer = opponent
+	end
+
+	if IsValid(scorer) then
+		scorer:SetNW2Int("duelscore", scorer:GetNW2Int("duelscore", 0) + 1)
+
+		if scorer:GetNW2Int("duelscore", 0) >= GetGlobal2Int("kills", 8) then
+			event:End(scorer)
+			return
+		end
+	end
+
+	FillDuel(victim)
 end)
-
--- spawn the next duelist from the queue
-function SpawnNextDuelist(opponent)
-	local ply = table.remove(queue, 1)
-	if not ply then
-		print("[DuelMaster] next duelist wasn't valid")
-		ChatMsg({Color(255,255,255), "DualMaster broke. error picking next opponent"})
-		event:End(opponent)
-		return
-	end
-	if not IsValid(ply) then
-		return SpawnNextDuelist(opponent)
-	end
-
-	//ply:SetNW2Int("duelscore", 0)
-	ply.dueling = true
-	ply.opponent = opponent
-	opponent.opponent = ply
-
-	if not GetGlobal2Entity("player1", NULL).dueling then
-		SetGlobal2Entity("player1", ply)
-	else
-		SetGlobal2Entity("player2", ply)
-	end
-
-	timer.Simple(1, function()
-		if not IsValid(ply) then return end
-
-		ply:StopSpectating(true)
-	end)
-
-	ply:PrintMessage(HUD_PRINTCENTER, "You're up!")
-	
-	for k,v in next, queue do
-		if v.dueling then continue end
-
-		v:PrintMessage(HUD_PRINTCENTER, queue[1]:Nick() .. " is next")
-	end
-
-	return ply
-end
-
-function DespawnDuelist(ply)
-	ply:SetSpectating(ply.opponent, true)
-
-	ply.dueling = false
-	ply.opponent = nil
-
-	table.insert(queue, ply)
-end
-
--- for when they're afk or disconnect
-function DeleteDuelist(ply)
-	ply:SetSpectating(ply.opponent, true)
-
-	table.remove(queue, table.KeyFromValue(queue, ply))
-	
-	if #queue < 1 then
-		event:End()
-	end
-
-	if ply.dueling then
-		SpawnNextDuelist(ply.opponent)
-	end
-
-	ply.dueling = false
-	ply.opponent = nil
-end
 
 event:OnSetup(function(kills)
 	kills = kills or 8
@@ -113,8 +192,8 @@ event:OnSetup(function(kills)
 	queue = table.Copy(event.players)
 	table.Shuffle(queue)
 
-	local ply1 = table.remove(queue, 1)
-	local ply2 = table.remove(queue, 1)
+	local ply1 = DequeueNextValid()
+	local ply2 = DequeueNextValid()
 
 	if not IsValid(ply1) or not IsValid(ply2) then return false end
 
@@ -124,26 +203,23 @@ event:OnSetup(function(kills)
 	ply1.opponent = ply2
 	ply2.opponent = ply1
 
-	ply1:StopSpectating(true)
-	ply2:StopSpectating(true)
-
-	ply1:Spawn()
-	ply2:Spawn()
-
 	SetGlobal2Int("kills", kills)
 	SetGlobal2Entity("player1", ply1)
 	SetGlobal2Entity("player2", ply2)
 
 	for k,v in next, event.players do
 		v:SetNW2Int("duelscore", 0)
-		
+	end
+
+	ply1:PKFreeze(true)
+	ply2:PKFreeze(true)
+
+	for k,v in next, event.players do
+		if not IsValid(v) then continue end
 		if v.dueling then continue end
 
 		v:SetSpectating(table.Random({ply1, ply2}), true)
 	end
-	
-	ply1:PKFreeze(true)
-	ply2:PKFreeze(true)
 
 	local maxprops = GetConVar("sbox_maxprops")
 	event.originalMaxProps = maxprops:GetInt()
@@ -168,7 +244,7 @@ end)
 
 event:OnGameStart(function()
 	for k, ply in next, event.players do
-		if ply.dueling then
+		if IsValid(ply) and ply.dueling then
 			ply:PKFreeze(false)
 		end
 	end
@@ -191,11 +267,14 @@ event:OnGameEnd(function(winner)
 end)
 
 event:OnCleanup(function()
+	queue = {}
+
 	SetGlobal2Entity("player1", NULL)
 	SetGlobal2Entity("player2", NULL)
 	PK.RemoveHud("duelhud")
 
 	for k, ply in next, event.players do
+		if not IsValid(ply) then continue end
 		ply.dueling = false
 		ply.opponent = nil
 	end

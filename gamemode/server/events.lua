@@ -143,6 +143,8 @@ function eventmeta:Start(...)
 end
 
 function eventmeta:End(...)
+	if PK.currentEvent != self then return end
+
 	self:RunGameEnd(...)
 
 	for k, v in next, self.hooks do
