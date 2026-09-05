@@ -27,11 +27,12 @@ if SERVER then
 		-- temporary workaround to just always network tables, until i write a deep compare func
 		if PK.netCache[id] == value and TypeID(value) != TYPE_TABLE then return end
 
-		if PK.netProxies[id] then
-			PK.netProxies[id](PK.netCache[id], value)
-		end
-
+		local old = PK.netCache[id]
 		PK.netCache[id] = value
+
+		if PK.netProxies[id] then
+			PK.netProxies[id](old, value)
+		end
 
 		net.Start("PK_Networking")
 			net.WriteString(id)
@@ -51,21 +52,23 @@ if CLIENT then
 		local id = net.ReadString()
 		local value = net.ReadType()
 
-		if PK.netProxies[id] then
-			PK.netProxies[id](PK.netCache[id], value)
-		end
-		
+		local old = PK.netCache[id]
 		PK.netCache[id] = value
+
+		if PK.netProxies[id] then
+			PK.netProxies[id](old, value)
+		end
 	end)
 
 	net.Receive("PK_NetworkingReady", function()
 		local netvars = net.ReadTable()
 		for id, value in next, netvars do
-			if PK.netProxies[id] then
-				PK.netProxies[id](PK.netCache[id], value)
-			end
-			
+			local old = PK.netCache[id]
 			PK.netCache[id] = value
+
+			if PK.netProxies[id] then
+				PK.netProxies[id](old, value)
+			end
 		end
 	end)
 

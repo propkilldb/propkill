@@ -63,6 +63,14 @@ local proplists = {
 	}
 }
 
+event:SetLeaderboard({
+	var = "eventlevel",
+	fmt = "%d",
+	score = function(ply)
+		return ply.level or 0
+	end,
+})
+
 event:Hook("PlayerDeath", "who killed who", function(ply, inflictor, attacker)
 	if not IsValid(attacker) or not attacker:IsPlayer() then return end
 	attacker.level = attacker.level or 1
@@ -79,7 +87,7 @@ event:Hook("PlayerDeath", "who killed who", function(ply, inflictor, attacker)
 	end
 
 	attacker.level = attacker.level + 1
-	
+
 	if attacker.level == #event.proplist then
 		ChatMsg({
 			Color(0,120,255), attacker:Nick(),

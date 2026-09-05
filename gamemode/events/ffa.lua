@@ -3,9 +3,17 @@ local event = newEvent("ffa", "Free For All", {
 	minplayers = 2
 })
 
+event:SetLeaderboard({
+	var = "eventkills",
+	fmt = "%d",
+	score = function(ply)
+		return ply:Frags()
+	end,
+})
+
 event:Hook("PlayerDeath", "end condition checking", function(ply, inflictor, attacker)
 	if not IsValid(attacker) or not attacker:IsPlayer() then return end
-	
+
 	if attacker:Frags() == event.kills then
 		event:End(attacker)
 	end

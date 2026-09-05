@@ -26,6 +26,20 @@ surface.CreateFont("pk_hudfont", {
 	shadow = true,
 })
 
+surface.CreateFont("pk_boardtitle", {
+	font = "Verdana",
+	size = 20,
+	weight = 650,
+	shadow = true,
+})
+
+surface.CreateFont("pk_boardrow", {
+	font = "Verdana",
+	size = 18,
+	weight = 550,
+	shadow = true,
+})
+
 local BlockedHUDElements = {
 	CHudHealth = true,
 	CHudBattery = true,
@@ -75,6 +89,146 @@ PK.RegisterHudElement("infohud",
 		panel:SetValue(PK.formatHudString(data.value))
 	end
 )
+
+local function getBoardOrder(data)
+	local source = istable(data) and data.source or "eventboard"
+	local order = PK.GetNWVar(source, {})
+	if not istable(order) then return {} end
+	return order
+end
+
+local function resolveBoardPlayer(entry)
+	if IsValid(entry) and entry:IsPlayer() then return entry end
+	if istable(entry) then
+		local ent = entry.ply or entry[1]
+		if IsValid(ent) and ent:IsPlayer() then return ent end
+	end
+end
+
+PK.RegisterHudElement("boardhud",
+	-- create
+	function(data)
+		local board = vgui.Create("DPanel")
+		board:ParentToHUD()
+		board.BoardData = data
+		board.Rows = {}
+
+		local width = 300
+		local headerH = 30
+		local rowH = 26
+
+		function board:PerformLayout()
+			local n = math.max(#self.Rows, 1)
+			self:SetSize(width, headerH + n * rowH + 6)
+			self:SetPos(10, 80)
+		end
+		function board:OnScreenSizeChanged()
+			self:InvalidateLayout(true)
+		end
+
+		function board:Paint(w, h)
+			local cfg = self.BoardData
+			if not istable(cfg) then return end
+
+			surface.SetDrawColor(0, 120, 255, 220)
+			surface.DrawRect(0, 0, w, headerH)
+			draw.DrawText(string.upper(tostring(cfg.title or "Leaderboard")), "pk_boardtitle", 10, 4, Color(255, 255, 255), TEXT_ALIGN_LEFT)
+
+			surface.SetDrawColor(40, 40, 40, 200)
+			surface.DrawRect(0, headerH, w, h - headerH)
+
+			if #self.Rows == 0 then
+				draw.DrawText("waiting...", "pk_boardrow", 10, headerH + 4, Color(150, 150, 150), TEXT_ALIGN_LEFT)
+				return
+			end
+
+			local me = LocalPlayer()
+
+			for i, row in ipairs(self.Rows) do
+				local rowply, rank = row.ply, row.rank
+				if not IsValid(rowply) then continue end
+
+				local y = headerH + (i - 1) * rowH
+				local isSelf = rowply == me
+				local isDead = rowply:Team() == TEAM_SPECTATOR
+
+				if isSelf then
+					surface.SetDrawColor(33, 101, 230, 220)
+					surface.DrawRect(0, y, w, rowH)
+				end
+
+				local textcol = Color(255, 255, 255)
+				if isDead and not isSelf then
+					textcol = Color(150, 150, 150)
+				end
+
+				local score = ""
+				if isstring(cfg.var) and isstring(cfg.fmt) then
+					score = PK.formatHudString({cfg.fmt, cfg.var}, rowply)
+				end
+
+				local name = rowply:Nick()
+				if #name > 20 then name = string.sub(name, 1, 20) .. "…" end
+
+				draw.DrawText(tostring(rank) .. ".", "pk_boardrow", 10, y + 3, textcol, TEXT_ALIGN_LEFT)
+				draw.DrawText(name, "pk_boardrow", 36, y + 3, textcol, TEXT_ALIGN_LEFT)
+				draw.DrawText(tostring(score), "pk_boardrow", w - 10, y + 3, textcol, TEXT_ALIGN_RIGHT)
+			end
+		end
+
+		return board
+	end,
+	-- update
+	function(panel, data)
+		panel.BoardData = data
+
+		local maxrows = tonumber(data.maxrows) or 3
+		local valid = {}
+
+		for k, entry in next, getBoardOrder(data) do
+			local rowply = resolveBoardPlayer(entry)
+			if IsValid(rowply) then
+				table.insert(valid, rowply)
+			end
+		end
+
+		local display = {}
+		for i = 1, math.min(#valid, maxrows) do
+			table.insert(display, {ply = valid[i], rank = i})
+		end
+
+		local me = LocalPlayer()
+		for i, ply in next, valid do
+			if ply == me and i > maxrows then
+				table.insert(display, {ply = me, rank = i})
+				break
+			end
+		end
+
+		panel.Rows = display
+		panel:InvalidateLayout(true)
+	end,
+	function(data, add)
+		if not isstring(data.var) then return end
+
+		for k, entry in next, getBoardOrder(data) do
+			local rowply = resolveBoardPlayer(entry)
+			if rowply then
+				add(rowply, data.var)
+			end
+		end
+	end
+)
+
+PK.SetNWVarProxy("eventboard", function()
+	local hudstate = PK.GetNWVar("hudstate", {})
+
+	for id, data in next, hudstate do
+		if istable(data) and data.style == "boardhud" then
+			PK.RefreshHudElement(id)
+		end
+	end
+end)
 
 PK.RegisterHudElement("duelhud",
 	-- create

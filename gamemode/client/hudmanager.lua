@@ -71,14 +71,15 @@ function GetObservedPlayer()
 	return ply
 end
 
-function PK.formatHudString(tbl)
+function PK.formatHudString(tbl, plyOverride)
 	if not istable(tbl) then return tbl end
 
 	tbl = table.Copy(tbl)
 
 	local formatstr = table.remove(tbl, 1)
 	local args = {}
-	local ply = GetObservedPlayer()
+	local ply = plyOverride or GetObservedPlayer()
+	if not IsValid(ply) then ply = GetObservedPlayer() end
 
 	for v in formatstr:gmatch("%%[pdiuoxXfFeEgGaAcsntT]") do
 		local getvar = formatmap[v]
@@ -102,10 +103,11 @@ function PK.formatHudString(tbl)
 	return string.format(formatstr, unpack(args))
 end
 
-function PK.RegisterHudElement(style, create, update)
+function PK.RegisterHudElement(style, create, update, proxies)
 	PK.registeredHudElements[style] = {
 		create = create,
-		update = update
+		update = update,
+		proxies = proxies
 	}
 end
 
@@ -134,6 +136,7 @@ hook.Add("EntityNetworkedVarChanged", "update hud vars", function(ent, nwvar, ol
 end)
 
 local function addNWVarProxy(ent, nwvar, id)
+	if not IsValid(ent) or not isstring(nwvar) then return end
 	PK.hudNWVars[ent] = PK.hudNWVars[ent] or {}
 	PK.hudNWVars[ent][nwvar] = PK.hudNWVars[ent][nwvar] or {}
 	PK.hudNWVars[ent][nwvar][id] = true
@@ -162,6 +165,25 @@ local function setupNWVarProxies(id, data)
 			addNWVarProxy(viewply, nwvar, id)
 		end
 	end
+
+	local element = PK.registeredHudElements[istable(data) and data.style]
+	if element and element.proxies then
+		element.proxies(data, function(ent, var)
+			addNWVarProxy(ent, var, id)
+		end)
+	end
+end
+
+function PK.RefreshHudElement(id)
+	local hudstate = PK.GetNWVar("hudstate", {})
+	local data = hudstate[id]
+	if not istable(data) then return end
+
+	local panel = PK.currentHudElements[id]
+	if not IsValid(panel) then return end
+
+	setupNWVarProxies(id, data)
+	panel:UpdateValues()
 end
 
 local function createHudElement(id, data)

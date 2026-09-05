@@ -4,6 +4,14 @@ local event = newEvent("lastmanstanding", "Last Man Standing", {
 	minplayers = 2,
 })
 
+event:SetLeaderboard({
+	var = "livesleft",
+	fmt = "%d",
+	score = function(ply)
+		return ply.lives or 0
+	end,
+})
+
 local function CheckRemainingPlayers()
 	local playersleft = 0
 	local lastplayer = NULL
@@ -22,7 +30,6 @@ end
 
 event:Hook("PlayerDeath", "kick dead noob out to spectator", function(ply)
 	ply.lives = (ply.lives or 1) - 1
-	ply:SetNW2Int("livesleft", ply.lives)
 
 	if ply.lives <= 0 then
 		ply:SetSpectating(nil, true)
@@ -52,7 +59,6 @@ event:OnSetup(function(lives)
 	for k, ply in next, event.players do
 		ply.battling = true
 		ply.lives = lives
-		ply:SetNW2Int("livesleft", lives)
 	end
 
 	PK.AddHud("lives", {

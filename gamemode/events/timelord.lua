@@ -4,6 +4,14 @@ local event = newEvent("timelord", "Time Lord", {
 	minplayers = 2,
 })
 
+event:SetLeaderboard({
+	var = "timeleft",
+	fmt = "%t",
+	score = function(ply)
+		return ply:GetNW2Int("timeleft", 0)
+	end,
+})
+
 local function CheckRemainingPlayers()
 	local playersleft = 0
 	local lastplayer = NULL
@@ -21,9 +29,9 @@ local function CheckRemainingPlayers()
 end
 
 local function TimeCheck(ply)
-	local timeleft = ply:GetNW2Float("timeleft", 0)
+	local timeleft = ply:GetNW2Int("timeleft", 0)
 
-	if timeleft <= 0 then
+	if timeleft <= 0 and ply.battling then
 		ply:SetSpectating(nil, true)
 		ply.battling = false
 
@@ -31,20 +39,24 @@ local function TimeCheck(ply)
 			Color(0,120,255), ply:Nick(),
 			Color(255,255,255), " ran out of time!",
 		})
+
+		return true
 	end
+
+	return false
 end
 
 event:Hook("PlayerDeath", "kick dead noob out to spectator", function(ply, inflictor, attacker)
-	local timeleft = ply:GetNW2Float("timeleft", 0)
+	local timeleft = ply:GetNW2Int("timeleft", 0)
 
 	if IsValid(attacker) and attacker:IsPlayer() and attacker.battling and ply != attacker then
-		local attackertimeleft = attacker:GetNW2Float("timeleft", 0)
+		local attackertimeleft = attacker:GetNW2Int("timeleft", 0)
 		attackertimeleft = attackertimeleft + math.min(event.timesteal, timeleft)
-		attacker:SetNW2Float("timeleft", attackertimeleft)
+		attacker:SetNW2Int("timeleft", attackertimeleft)
 	end
 
-	timeleft = timeleft - event.timesteal
-	ply:SetNW2Float("timeleft", timeleft)
+	timeleft = math.max(0, timeleft - event.timesteal)
+	ply:SetNW2Int("timeleft", timeleft)
 
 	TimeCheck(ply)
 	CheckRemainingPlayers()
@@ -67,11 +79,13 @@ event:Hook("PlayerLeftEvent", "remove players from count and re-check", function
 end)
 
 event:OnSetup(function(time, timesteal)
+	time = math.floor(time)
+	timesteal = math.floor(timesteal)
 	event.timesteal = timesteal
 
 	for k, ply in next, event.players do
 		ply.battling = true
-		ply:SetNW2Float("timeleft", time)
+		ply:SetNW2Int("timeleft", time)
 	end
 
 	PK.AddHud("timeleft", {
@@ -92,15 +106,22 @@ event:OnGameStart(function()
 		Color(255,255,255), " GO!!!",
 	})
 
-	timer.Create("deathclock_countdown", 0.1, 0, function()
+	timer.Create("deathclock_countdown", 1, 0, function()
+		local eliminated = false
+
 		for k, ply in next, event.players do
 			if not ply.battling then continue end
 
-			local timeleft = ply:GetNW2Float("timeleft", 0)
-			timeleft = timeleft - 0.1
-			ply:SetNW2Float("timeleft", timeleft)
+			local timeleft = ply:GetNW2Int("timeleft", 0)
+			timeleft = math.max(0, timeleft - 1)
+			ply:SetNW2Int("timeleft", timeleft)
 
-			TimeCheck(ply)
+			if TimeCheck(ply) then
+				eliminated = true
+			end
+		end
+		if eliminated then
+			event:UpdateLeaderboard()
 		end
 		CheckRemainingPlayers()
 	end)
@@ -110,7 +131,7 @@ event:OnGameEnd(function(winner)
 	timer.Remove("deathclock_countdown")
 
 	if IsValid(winner) then
-		local timeleft = winner:GetNW2Float("timeleft", 0)
+		local timeleft = winner:GetNW2Int("timeleft", 0)
 		
 		ChatMsg({
 			Color(0,120,255), winner:Nick(),

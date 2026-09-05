@@ -71,6 +71,36 @@ function eventmeta:RunGameEnd(...)
 	end
 end
 
+function eventmeta:SetLeaderboard(config)
+	self.leaderboard = config
+end
+
+function eventmeta:UpdateLeaderboard()
+	local config = self.leaderboard
+	if not config then return end
+
+	local scores = {}
+	for _, ply in next, self.players do
+		if IsValid(ply) then
+			local value = config.score and tonumber(config.score(ply)) or 0
+			scores[ply] = value or 0
+
+			if config.var then
+				ply:SetNW2Float(config.var, scores[ply])
+				ply:SetNW2Int(config.var, math.floor(scores[ply]))
+			end
+		end
+	end
+
+	local sorted = {}
+	for ply in next, scores do
+		table.insert(sorted, ply)
+	end
+	table.sort(sorted, config.sort or function(a, b) return scores[a] > scores[b] end)
+
+	PK.SetNWVar("eventboard", sorted)
+end
+
 function eventmeta:OnCleanup(func)
 	self.cleanupFunc = func
 end
@@ -129,6 +159,18 @@ function eventmeta:Start(...)
 		hook.Add(v.eventName, v.hookName, v.func)
 	end
 
+	if self.leaderboard then
+		PK.AddHud("board", {
+			style = "boardhud",
+			title = self.name,
+			var = self.leaderboard.var,
+			fmt = self.leaderboard.fmt,
+			maxrows = self.leaderboard.maxrows or 3,
+			source = "eventboard",
+		})
+		self:UpdateLeaderboard()
+	end
+
 	timer.Simple(self.options.startfreezetime, function()
 		if self.options.freezeplayers then
 			for _, ply in next, self.players do
@@ -156,6 +198,11 @@ function eventmeta:End(...)
 	PK.currentEvent = nil
 
 	timer.Simple(self.options.endfreezetime, function()
+		if self.leaderboard then
+			PK.RemoveHud("board")
+			PK.SetNWVar("eventboard", {})
+		end
+
 		self:RunCleanup()
 
 		for _, ply in next, player.GetAll() do
@@ -261,6 +308,22 @@ hook.Add("PlayerLeftEvent", "join message", function(ply)
 
 	ply:ChatPrint("You have left the " .. event.name .. " event")
 end)
+
+local function refreshLeaderboard()
+	local event = PK.currentEvent
+	if not event or not event.leaderboard then return end
+
+	-- delay 1 frame so event hooks mutating scores run first
+	timer.Simple(0, function()
+		if PK.currentEvent == event then
+			event:UpdateLeaderboard()
+		end
+	end)
+end
+
+hook.Add("PlayerDeath", "pk leaderboard refresh", refreshLeaderboard)
+hook.Add("PlayerJoinedEvent", "pk leaderboard refresh", refreshLeaderboard)
+hook.Add("PlayerLeftEvent", "pk leaderboard refresh", refreshLeaderboard)
 
 util.AddNetworkString("PK_EventKick")
 
