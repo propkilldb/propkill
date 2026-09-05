@@ -68,3 +68,7 @@ hook.Add("SetupPlayerVisibility", "addallplayers", function(ply)
 		end
 	end
 end)
+
+hook.Add("CanUndo", "no undo while dead cos its funny", function(ply)
+	if not ply:Alive() then return false end
+end)
