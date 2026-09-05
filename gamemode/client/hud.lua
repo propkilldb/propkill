@@ -90,21 +90,6 @@ PK.RegisterHudElement("infohud",
 	end
 )
 
-local function getBoardOrder(data)
-	local source = istable(data) and data.source or "eventboard"
-	local order = PK.GetNWVar(source, {})
-	if not istable(order) then return {} end
-	return order
-end
-
-local function resolveBoardPlayer(entry)
-	if IsValid(entry) and entry:IsPlayer() then return entry end
-	if istable(entry) then
-		local ent = entry.ply or entry[1]
-		if IsValid(ent) and ent:IsPlayer() then return ent end
-	end
-end
-
 PK.RegisterHudElement("boardhud",
 	-- create
 	function(data)
@@ -185,9 +170,8 @@ PK.RegisterHudElement("boardhud",
 		local maxrows = tonumber(data.maxrows) or 3
 		local valid = {}
 
-		for k, entry in next, getBoardOrder(data) do
-			local rowply = resolveBoardPlayer(entry)
-			if IsValid(rowply) then
+		for k, rowply in next, PK.GetNWVar("eventboard", {}) do
+			if IsValid(rowply) and rowply:IsPlayer() then
 				table.insert(valid, rowply)
 			end
 		end
@@ -211,9 +195,8 @@ PK.RegisterHudElement("boardhud",
 	function(data, add)
 		if not isstring(data.var) then return end
 
-		for k, entry in next, getBoardOrder(data) do
-			local rowply = resolveBoardPlayer(entry)
-			if rowply then
+		for k, rowply in next, PK.GetNWVar("eventboard", {}) do
+			if IsValid(rowply) and rowply:IsPlayer() then
 				add(rowply, data.var)
 			end
 		end

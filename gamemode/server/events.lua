@@ -166,7 +166,6 @@ function eventmeta:Start(...)
 			var = self.leaderboard.var,
 			fmt = self.leaderboard.fmt,
 			maxrows = self.leaderboard.maxrows or 3,
-			source = "eventboard",
 		})
 		self:UpdateLeaderboard()
 	end
